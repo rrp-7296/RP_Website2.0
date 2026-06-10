@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Rakeshwar Pandey Portfolio</string>
+    <string name="title_activity_main">Rakeshwar Pandey Portfolio</string>
+    <string name="package_name">com.rakes.portfolio</string>
+    <string name="custom_url_scheme">com.rakes.portfolio</string>
+</resources>

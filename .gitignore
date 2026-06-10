@@ -1,0 +1,97 @@
+# ─── Python / Backend ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+
+# Environment files (contain secrets — never commit)
+backend/.env
+# Keep the example file so new devs know what's needed
+!backend/.env.example
+
+# SQLite dev database (use proper DB in production)
+backend/test.db
+backend/*.db
+backend/*.sqlite3
+
+# Alembic compiled
+backend/alembic/__pycache__/
+
+# Uploaded files (large binary files — store in cloud storage in production)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Python egg / dist
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ─── Node / Frontend ─────────────────────────────────────────────────────────
+ui/node_modules/
+ui/dist/
+ui/dist-ssr/
+
+# Vite cache
+ui/.vite/
+
+# Env files (production URL config — may contain IPs)
+ui/.env.production
+# Keep dev env (no secrets)
+!ui/.env.development
+
+# Temp fix scripts (one-off utilities)
+ui/fix_admin_urls.py
+
+# ─── Capacitor / Android ─────────────────────────────────────────────────────
+# Android build outputs
+ui/android/app/build/
+ui/android/.gradle/
+ui/android/build/
+ui/android/local.properties
+
+# Android keystore — NEVER commit (contains signing keys)
+*.keystore
+*.jks
+
+# iOS build outputs (Mac only)
+ui/ios/App/Pods/
+ui/ios/App/App.xcworkspace/
+ui/ios/.xcode.env.local
+ui/ios/App/build/
+ui/ios/DerivedData/
+
+# ─── Editor / OS ─────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+desktop.ini
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+.project_id
+*.tmp
+*.bak
+*.orig
