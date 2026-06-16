@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme 2 — Tricolor Premium</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: #FAFAFA; overflow: hidden; width: 1280px; height: 720px; position: relative; }
+
+  /* Ashoka Chakra watermark - rotating */
+  .chakra-bg { position: absolute; right: -120px; top: 50%; transform: translateY(-50%); width: 700px; height: 700px; opacity: 0.04; animation: chakra-spin 30s linear infinite; }
+  .chakra-bg svg { width: 100%; height: 100%; }
+  @keyframes chakra-spin { from{transform:translateY(-50%) rotate(0deg)} to{transform:translateY(-50%) rotate(360deg)} }
+
+  /* Saffron moving wave top */
+  .wave-top { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #FF9933, #FF6B00, #FFB366, #FF9933); background-size: 300% 100%; animation: wave-move 3s ease-in-out infinite; }
+  @keyframes wave-move { 0%{background-position:0%} 50%{background-position:100%} 100%{background-position:0%} }
+
+  /* Green bottom bar */
+  .wave-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #138808, #059669, #138808); background-size: 300% 100%; animation: wave-move 3s ease-in-out infinite reverse; }
+
+  /* Vertical tricolor stripe on left */
+  .left-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(to bottom, #FF9933 33%, #FFFFFF 33% 66%, #138808 66%); }
+
+  /* Floating orbs (subtle, light) */
+  .orb { position: absolute; border-radius: 50%; filter: blur(60px); }
+  .orb1 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,153,51,0.12), transparent); top: -100px; left: 100px; animation: drift 10s ease-in-out infinite; }
+  .orb2 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(19,136,8,0.08), transparent); bottom: 0; right: 200px; animation: drift 8s ease-in-out infinite reverse; }
+  @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+
+  /* Decorative dots pattern */
+  .dots { position: absolute; right: 0; top: 0; bottom: 0; width: 600px; background-image: radial-gradient(circle, rgba(255,153,51,0.12) 1px, transparent 1px); background-size: 28px 28px; }
+
+  /* Nav */
+  nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 24px 60px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .logo { font-size: 1.3rem; font-weight: 800; color: #1a1a1a; }
+  .logo span { color: #FF9933; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a { color: rgba(0,0,0,0.55); text-decoration: none; font-size: 0.9rem; font-weight: 500; position: relative; padding-bottom: 4px; }
+  .nav-links a.active { color: #FF9933; font-weight: 700; }
+  .nav-links a.active::after { content:''; position:absolute; bottom:0; left:0; width:100%; height:2px; background:#FF9933; border-radius:2px; }
+  .nav-cta { background: #FF9933; color: #fff; padding: 10px 24px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; }
+
+  /* Hero */
+  .hero { position: relative; z-index: 5; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 50px 60px 0; gap: 60px; height: calc(720px - 85px); }
+
+  /* Left content */
+  .eyebrow { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .eyebrow-line { width: 40px; height: 3px; background: #FF9933; border-radius: 2px; animation: expand 2s ease-in-out infinite alternate; }
+  @keyframes expand { from{width:30px} to{width:60px} }
+  .eyebrow span { color: #FF9933; font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  h1 { font-size: 4rem; font-weight: 900; line-height: 1.08; color: #111; margin-bottom: 8px; }
+  h1 .highlight { color: #FF9933; position: relative; }
+  h1 .highlight::after { content:''; position:absolute; bottom:-4px; left:0; width:100%; height:4px; background: linear-gradient(90deg,#FF9933,#138808); border-radius:2px; animation: underline-grow 2s ease-in-out infinite alternate; }
+  @keyframes underline-grow { from{width:0} to{width:100%} }
+  .green-text { color: #138808; display: block; }
+  .subtitle { color: rgba(0,0,0,0.55); font-size: 1rem; line-height: 1.7; margin-bottom: 36px; max-width: 440px; }
+
+  /* Tricolor pill badge */
+  .tricolor-badge { display: inline-flex; gap: 0; border-radius: 50px; overflow: hidden; margin-bottom: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: badge-glow 3s ease-in-out infinite; }
+  @keyframes badge-glow { 0%,100%{box-shadow:0 4px 15px rgba(0,0,0,0.1)} 50%{box-shadow:0 4px 25px rgba(255,153,51,0.3)} }
+  .tc-seg { padding: 8px 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .tc-s { background: #FF9933; color: #fff; }
+  .tc-w { background: #fff; color: #333; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
+  .tc-g { background: #138808; color: #fff; }
+
+  .cta-group { display: flex; gap: 16px; }
+  .btn-saffron { background: #FF9933; color: #fff; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(255,153,51,0.3); }
+  .btn-green { background: transparent; color: #138808; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; border: 2px solid #138808; cursor: pointer; }
+
+  /* Stats row */
+  .stats { display: flex; gap: 32px; margin-top: 40px; padding-top: 32px; border-top: 1px solid rgba(0,0,0,0.08); }
+  .stat-num { font-size: 2rem; font-weight: 900; color: #FF9933; }
+  .stat-label { font-size: 0.75rem; color: rgba(0,0,0,0.45); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Right: portrait */
+  .portrait-area { display: flex; justify-content: center; align-items: center; position: relative; }
+  .portrait-outer { width: 340px; height: 340px; border-radius: 24px; background: linear-gradient(135deg, #FF9933 0%, #fff 50%, #138808 100%); padding: 4px; animation: border-pulse 3s ease-in-out infinite; }
+  @keyframes border-pulse { 0%,100%{padding:4px} 50%{padding:6px} }
+  .portrait-inner { width: 100%; height: 100%; border-radius: 22px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 5rem; }
+  .chakra-small { position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; opacity: 0.2; animation: chakra-spin 8s linear infinite; }
+
+  .theme-label { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #FF9933; border-radius: 50px; padding: 8px 24px; color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 2px; z-index: 20; }
+</style>
+</head>
+<body>
+  <div class="wave-top"></div>
+  <div class="wave-bottom"></div>
+  <div class="left-stripe"></div>
+  <div class="dots"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <!-- Ashoka Chakra SVG watermark -->
+  <div class="chakra-bg">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#138808" stroke-width="4"/>
+      <circle cx="100" cy="100" r="10" fill="#138808"/>
+      <circle cx="100" cy="100" r="70" fill="none" stroke="#138808" stroke-width="2"/>
+      <!-- 24 spokes -->
+      <g stroke="#138808" stroke-width="2">
+        <line x1="100" y1="30" x2="100" y2="170"/>
+        <line x1="30" y1="100" x2="170" y2="100"/>
+        <line x1="47" y1="47" x2="153" y2="153"/>
+        <line x1="153" y1="47" x2="47" y2="153"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(15 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(30 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(45 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(60 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(75 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(90 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(105 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(120 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(135 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(150 100 100)"/>
+        <line x1="100" y1="30" x2="100" y2="170" transform="rotate(165 100 100)"/>
+      </g>
+    </svg>
+  </div>
+
+  <nav>
+    <div class="logo">RP <span>Portfolio</span></div>
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#">Timeline</a>
+      <a href="#">Blog</a>
+      <a href="#">Gallery</a>
+      <a href="#">Contact</a>
+    </div>
+    <button class="nav-cta">Connect →</button>
+  </nav>
+
+  <div class="hero">
+    <div class="left">
+      <div class="tricolor-badge">
+        <div class="tc-seg tc-s">INTUC</div>
+        <div class="tc-seg tc-w">Jharkhand</div>
+        <div class="tc-seg tc-g">President</div>
+      </div>
+      <div class="eyebrow"><div class="eyebrow-line"></div><span>Social Leader & Trade Union Champion</span></div>
+      <h1><span class="highlight">Rakeshwar</span><span class="green-text">Pandey</span></h1>
+      <p class="subtitle">Serving the workers and people of Jharkhand for over 3 decades. Fighting for fair wages, worker rights, and social justice.</p>
+      <div class="cta-group">
+        <button class="btn-saffron">View Timeline →</button>
+        <button class="btn-green">Read Blogs</button>
+      </div>
+      <div class="stats">
+        <div><div class="stat-num">35+</div><div class="stat-label">Years Service</div></div>
+        <div><div class="stat-num">12</div><div class="stat-label">Unions Led</div></div>
+        <div><div class="stat-num">50K+</div><div class="stat-label">Workers Helped</div></div>
+      </div>
+    </div>
+    <div class="portrait-area">
+      <div class="portrait-outer">
+        <div class="portrait-inner">🏛️</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme-label">OPTION 2 — TRICOLOR PREMIUM</div>
+</body>
+</html>

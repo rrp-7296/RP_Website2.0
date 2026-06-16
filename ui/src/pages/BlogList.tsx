@@ -83,6 +83,36 @@ export default function BlogList() {
       });
   }, [currentPage]);
 
+  const getBlogCategory = (post: BlogPost) => {
+    if (post.id === 1 || post.title.toLowerCase().includes('union') || post.title.toLowerCase().includes('labor')) {
+      return "Union Engagements";
+    }
+    if (post.id === 2 || post.title.toLowerCase().includes('education') || post.title.toLowerCase().includes('rural')) {
+      return "Education & Welfare";
+    }
+    if (post.id === 3 || post.title.toLowerCase().includes('industrial') || post.title.toLowerCase().includes('growth')) {
+      return "Industrial Relations";
+    }
+    return "Insights & News";
+  };
+
+  // Helper to split blogs into 3 columns for asymmetrical staggered editorial view
+  const getColumns = () => {
+    const col1: BlogPost[] = [];
+    const col2: BlogPost[] = [];
+    const col3: BlogPost[] = [];
+
+    blogs.forEach((post, index) => {
+      if (index % 3 === 0) col1.push(post);
+      else if (index % 3 === 1) col2.push(post);
+      else col3.push(post);
+    });
+
+    return { col1, col2, col3 };
+  };
+
+  const { col1, col2, col3 } = getColumns();
+
   return (
     <div className="blog-list-page page-container container section-padding" style={{ paddingTop: '120px' }}>
       <div className="page-breadcrumbs">
@@ -91,39 +121,72 @@ export default function BlogList() {
         <span className="current">Blogs</span>
       </div>
 
-      <div className="section-header" style={{ textAlign: 'left', marginBottom: '32px' }}>
-        <h1 className="section-title" style={{ fontSize: '3rem' }}>All Blog Posts</h1>
-        <p className="section-subtitle" style={{ margin: '0' }}>Browse and read articles detailing trade union strategy, labor laws, and social leader diaries.</p>
-      </div>
-
       {loading ? (
-        <div className="text-center" style={{ padding: '60px 0' }}>Loading blog posts...</div>
+        <div className="text-center" style={{ padding: '80px 0', color: 'var(--text-muted)' }}>Loading blog posts...</div>
       ) : (
         <>
-          <div className="blogs-grid grid-3">
-            {blogs.map((post) => (
-              <div key={post.id} className="blog-card glass-card">
-                <div className="blog-card-img-wrapper">
-                  <img src={post.image || '/img/58.jpg'} alt={post.title} className="blog-card-img" />
-                </div>
-                <div className="blog-card-body">
-                  <div className="blog-meta">
-                    <span className="blog-date"><Calendar size={12} /> {post.date}</span>
-                    <div className="blog-stats">
-                      <span><Eye size={12} /> {post.views}</span>
-                      <span><ThumbsUp size={12} /> {post.likes}</span>
-                    </div>
-                  </div>
-                  <h3 className="blog-card-title">{post.title}</h3>
-                  <p className="blog-card-excerpt">
-                    {post.description.length > 150 ? `${post.description.substring(0, 150)}...` : post.description}
-                  </p>
-                  <Link to={`/blog/${post.id}`} className="btn btn-outline btn-sm blog-card-btn" style={{ marginTop: 'auto' }}>
-                    Read Full Article
-                  </Link>
-                </div>
+          <div className="blog-editorial-grid">
+            {/* Column 1: Banner Block + Staggered Cards */}
+            <div className="blog-editorial-column">
+              <div className="blog-editorial-banner">
+                <span className="blog-banner-eyebrow">NEWS & INSIGHTS</span>
+                <h1 className="blog-banner-title">Insights</h1>
+                <p className="blog-banner-desc">
+                  Thoughts, articles, and coverage regarding industrial policies, trade unions, and social work.
+                </p>
               </div>
-            ))}
+
+              {col1.map((post) => (
+                <Link to={`/blog/${post.id}`} key={post.id} className="blog-editorial-card">
+                  <div className="blog-card-category">{getBlogCategory(post)}</div>
+                  <div className="blog-card-img-container">
+                    <img src={post.image || '/img/58.jpg'} alt={post.title} loading="lazy" />
+                  </div>
+                  <h3 className="blog-card-heading">{post.title}</h3>
+                  <div className="blog-card-meta">
+                    <span>{post.date}</span>
+                    <span>|</span>
+                    <span>{post.views} Views</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Column 2 */}
+            <div className="blog-editorial-column">
+              {col2.map((post) => (
+                <Link to={`/blog/${post.id}`} key={post.id} className="blog-editorial-card">
+                  <div className="blog-card-category">{getBlogCategory(post)}</div>
+                  <div className="blog-card-img-container">
+                    <img src={post.image || '/img/58.jpg'} alt={post.title} loading="lazy" />
+                  </div>
+                  <h3 className="blog-card-heading">{post.title}</h3>
+                  <div className="blog-card-meta">
+                    <span>{post.date}</span>
+                    <span>|</span>
+                    <span>{post.views} Views</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Column 3 */}
+            <div className="blog-editorial-column">
+              {col3.map((post) => (
+                <Link to={`/blog/${post.id}`} key={post.id} className="blog-editorial-card">
+                  <div className="blog-card-category">{getBlogCategory(post)}</div>
+                  <div className="blog-card-img-container">
+                    <img src={post.image || '/img/58.jpg'} alt={post.title} loading="lazy" />
+                  </div>
+                  <h3 className="blog-card-heading">{post.title}</h3>
+                  <div className="blog-card-meta">
+                    <span>{post.date}</span>
+                    <span>|</span>
+                    <span>{post.views} Views</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
 
           {totalPages > 1 && (

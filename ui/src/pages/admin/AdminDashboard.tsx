@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
-  Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass 
+  Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
+  Bell, Menu, X
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 
-type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments';
+type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications';
 
 interface Stats {
   total_blogs: number;
@@ -17,13 +18,15 @@ interface Stats {
   unread_messages: number;
   pending_comments: number;
   total_subscribers: number;
+  unread_notifications: number;
 }
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({
     total_blogs: 0, total_timeline: 0, total_news: 0, total_gallery: 0,
-    unread_messages: 0, pending_comments: 0, total_subscribers: 0
+    unread_messages: 0, pending_comments: 0, total_subscribers: 0, unread_notifications: 0
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -65,7 +68,7 @@ export default function AdminDashboard() {
       // Mock stats for frontend preview
       setStats({
         total_blogs: 3, total_timeline: 5, total_news: 6, total_gallery: 12,
-        unread_messages: 2, pending_comments: 1, total_subscribers: 45
+        unread_messages: 2, pending_comments: 1, total_subscribers: 45, unread_notifications: 3
       });
     } finally {
       setLoading(false);
@@ -77,11 +80,24 @@ export default function AdminDashboard() {
     navigate('/admin');
   };
 
+  const handleTabClick = (tab: Tab) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
+
   return (
     <div className="admin-dashboard container section-padding" style={{ paddingTop: '120px', minHeight: '90vh' }}>
       {/* Header */}
-      <div className="admin-dash-header glass-card" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div className="admin-dash-header glass-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="mobile-menu-toggle btn-icon"
+            style={{ display: 'none' }}
+            title="Toggle Menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
           <Shield className="saffron" size={28} />
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: '700', margin: '0' }}>Admin Dashboard</h1>
@@ -96,47 +112,62 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="dashboard-layout" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '32px' }}>
+      <div className="dashboard-layout">
+        {/* Mobile Sidebar Overlay/Backdrop */}
+        {mobileMenuOpen && (
+          <div 
+            className="mobile-sidebar-backdrop" 
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Navigation Sidebar */}
-        <aside className="dashboard-sidebar glass-card" style={{ padding: '16px', height: 'fit-content' }}>
-          <ul style={{ listStyle: 'none', padding: '0', margin: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <aside className={`dashboard-sidebar glass-card ${mobileMenuOpen ? 'open' : ''}`}>
+          <ul className="dash-nav-list">
             <li>
-              <button onClick={() => setActiveTab('overview')} className={`dash-nav-btn ${activeTab === 'overview' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('overview')} className={`dash-nav-btn ${activeTab === 'overview' ? 'active' : ''}`}>
                 <BarChart size={18} /> Overview
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('blogs')} className={`dash-nav-btn ${activeTab === 'blogs' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('blogs')} className={`dash-nav-btn ${activeTab === 'blogs' ? 'active' : ''}`}>
                 <BookOpen size={18} /> Manage Blogs
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('timeline')} className={`dash-nav-btn ${activeTab === 'timeline' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('timeline')} className={`dash-nav-btn ${activeTab === 'timeline' ? 'active' : ''}`}>
                 <Calendar size={18} /> Manage Timeline
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('news')} className={`dash-nav-btn ${activeTab === 'news' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('news')} className={`dash-nav-btn ${activeTab === 'news' ? 'active' : ''}`}>
                 <Compass size={18} /> Manage News
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('gallery')} className={`dash-nav-btn ${activeTab === 'gallery' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('gallery')} className={`dash-nav-btn ${activeTab === 'gallery' ? 'active' : ''}`}>
                 <ImageIcon size={18} /> Manage Gallery
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('messages')} className={`dash-nav-btn ${activeTab === 'messages' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('messages')} className={`dash-nav-btn ${activeTab === 'messages' ? 'active' : ''}`}>
                 <Mail size={18} /> 
                 <span>Messages</span>
                 {stats.unread_messages > 0 && <span className="badge saffron-bg">{stats.unread_messages}</span>}
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('comments')} className={`dash-nav-btn ${activeTab === 'comments' ? 'active' : ''}`}>
+              <button onClick={() => handleTabClick('comments')} className={`dash-nav-btn ${activeTab === 'comments' ? 'active' : ''}`}>
                 <MessageSquare size={18} /> 
                 <span>Comments</span>
                 {stats.pending_comments > 0 && <span className="badge green-bg">{stats.pending_comments}</span>}
+              </button>
+            </li>
+            <li>
+              <button onClick={() => handleTabClick('notifications')} className={`dash-nav-btn ${activeTab === 'notifications' ? 'active' : ''}`}>
+                <Bell size={18} /> 
+                <span>Notifications</span>
+                {stats.unread_notifications > 0 && <span className="badge saffron-bg">{stats.unread_notifications}</span>}
               </button>
             </li>
           </ul>
@@ -151,6 +182,7 @@ export default function AdminDashboard() {
           {activeTab === 'gallery' && <GalleryManager token={token} onUpdate={fetchStats} />}
           {activeTab === 'messages' && <MessagesInbox token={token} onUpdate={fetchStats} />}
           {activeTab === 'comments' && <CommentsApproval token={token} onUpdate={fetchStats} />}
+          {activeTab === 'notifications' && <NotificationsPanel token={token} onUpdate={fetchStats} setActiveTab={setActiveTab} />}
         </main>
       </div>
     </div>
@@ -700,8 +732,8 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
           <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}><Upload size={18} style={{ display: 'inline', marginRight: '8px' }} /> Upload Photo</h3>
           <form onSubmit={handleSubmit} className="dash-form">
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label>Tag Category</label>
-              <select value={tag} onChange={(e) => setTag(e.target.value)} className="form-input" style={{ width: '100%', height: '38px', background: 'var(--bg-dark)', color: 'white', border: '1px solid var(--border-glass)' }}>
+              <label className="form-label">Tag Category</label>
+              <select value={tag} onChange={(e) => setTag(e.target.value)} className="form-input" style={{ width: '100%', height: '44px' }}>
                 <option value="international">International</option>
                 <option value="intuc">INTUC</option>
                 <option value="union">Unions</option>
@@ -752,6 +784,9 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
 // ─── MESSAGES INBOX ────────────────────────────────────────────────
 function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: () => void }) {
   const [messages, setMessages] = useState<any[]>([]);
+  const [activeReplyMessage, setActiveReplyMessage] = useState<any | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -786,6 +821,37 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
     }
   };
 
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !activeReplyMessage || !replyText.trim()) return;
+    setSendingReply(true);
+
+    try {
+      const res = await fetch(apiUrl(`/admin/messages/${activeReplyMessage.id}/reply`), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reply_message: replyText })
+      });
+      if (res.ok) {
+        alert('Reply email sent successfully!');
+        setActiveReplyMessage(null);
+        setReplyText('');
+        fetchMessages();
+        onUpdate();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || 'Failed to send reply email. Please verify SMTP settings in .env.');
+      }
+    } catch (err) {
+      alert('Failed to connect to the server.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   return (
     <div className="messages-inbox animate-fade-in">
       <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '24px' }}>Contact Messages Inbox</h2>
@@ -794,10 +860,17 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
           <div className="glass-card text-center" style={{ padding: '40px' }}>No messages in inbox.</div>
         ) : (
           messages.map((m) => (
-            <div key={m.id} className="message-item glass-card" style={{ padding: '24px', borderLeft: m.is_read ? '1px solid var(--border-glass)' : '4px solid var(--color-saffron)' }}>
+            <div key={m.id} className="message-item glass-card" style={{ padding: '24px', borderLeft: m.is_replied ? '4px solid #10b981' : (m.is_read ? '1px solid var(--border-color)' : '4px solid var(--saffron)') }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 4px' }}>{m.subject}</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0' }}>{m.subject}</h4>
+                    {m.is_replied ? (
+                      <span className="badge green-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Replied</span>
+                    ) : (
+                      <span className="badge saffron-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Pending Reply</span>
+                    )}
+                  </div>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>From: <strong>{m.name}</strong> ({m.email})</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -807,16 +880,71 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
                       <Check size={12} /> Mark Read
                     </button>
                   )}
+                  {!m.is_replied && (
+                    <button onClick={() => { setActiveReplyMessage(m); setReplyText(''); }} className="btn btn-saffron btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                      Reply via Email
+                    </button>
+                  )}
                 </div>
               </div>
-              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '8px', margin: '0' }}>{m.message}</p>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', background: 'var(--saffron-pale)', border: '1px dashed var(--border-saffron)', padding: '14px 18px', borderRadius: '12px', margin: '0' }}>{m.message}</p>
+              
+              {m.is_replied && m.reply_message && (
+                <div style={{ marginTop: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '14px 18px', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.8rem', color: '#10b981', fontWeight: '600' }}>
+                    <span>Admin Reply History</span>
+                    <span>Sent: {new Date(m.replied_at).toLocaleString()}</span>
+                  </div>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0', whiteSpace: 'pre-wrap' }}>{m.reply_message}</p>
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
+
+      {activeReplyMessage && (
+        <div className="modal-overlay" onClick={() => setActiveReplyMessage(null)}>
+          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '16px' }}>Reply to Message</h3>
+            
+            <div style={{ marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <div style={{ marginBottom: '4px' }}><strong>To:</strong> {activeReplyMessage.name} &lt;{activeReplyMessage.email}&gt;</div>
+              <div><strong>Original Subject:</strong> {activeReplyMessage.subject}</div>
+            </div>
+
+            <div style={{ background: 'var(--saffron-pale)', padding: '12px', borderRadius: '8px', marginBottom: '20px', maxHeight: '120px', overflowY: 'auto', fontSize: '0.88rem', color: 'var(--text-secondary)', borderLeft: '3px solid var(--saffron)' }}>
+              <strong style={{ display: 'block', marginBottom: '4px' }}>Original Message:</strong>
+              {activeReplyMessage.message}
+            </div>
+
+            <form onSubmit={handleSendReply} className="dash-form">
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label style={{ fontWeight: '600', marginBottom: '8px', display: 'block' }}>Email Reply Body</label>
+                <textarea 
+                  rows={8} 
+                  value={replyText} 
+                  onChange={(e) => setReplyText(e.target.value)} 
+                  required 
+                  placeholder="Type your email response here..."
+                  className="form-input"
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setActiveReplyMessage(null)} className="btn btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>
+                <button type="submit" disabled={sendingReply || !replyText.trim()} className="btn btn-saffron" style={{ padding: '8px 20px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  {sendingReply ? 'Sending Email...' : 'Send Reply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 // ─── COMMENTS APPROVAL ─────────────────────────────────────────────
 function CommentsApproval({ token, onUpdate }: { token: string | null, onUpdate: () => void }) {
@@ -882,10 +1010,10 @@ function CommentsApproval({ token, onUpdate }: { token: string | null, onUpdate:
             <div key={c.id} className="comment-item glass-card" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: '1', marginRight: '24px' }}>
                 <div style={{ marginBottom: '6px' }}>
-                  <strong style={{ fontSize: '1rem' }}>{c.author_name}</strong>
+                  <strong style={{ fontSize: '1rem' }}>{c.name || c.author_name || 'Anonymous'}</strong>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '12px' }}>{new Date(c.created_at).toLocaleDateString()}</span>
                 </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0' }}>{c.comment_text}</p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0' }}>{c.comment || c.comment_text || ''}</p>
                 <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>On Post ID: {c.post_id}</small>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -894,6 +1022,181 @@ function CommentsApproval({ token, onUpdate }: { token: string | null, onUpdate:
                 </button>
                 <button onClick={() => handleDelete(c.id)} className="btn btn-outline btn-sm text-red" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                   Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── NOTIFICATIONS PANEL ───────────────────────────────────────────
+function NotificationsPanel({ 
+  token, 
+  onUpdate, 
+  setActiveTab 
+}: { 
+  token: string | null; 
+  onUpdate: () => void; 
+  setActiveTab: (tab: any) => void;
+}) {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(apiUrl('/admin/notifications'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data || []);
+      }
+    } catch (e) {
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkRead = async (id: number) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/notifications/${id}/read`), {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchNotifications();
+        onUpdate();
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch(apiUrl('/admin/notifications/read-all'), {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchNotifications();
+        onUpdate();
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/notifications/${id}`), {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchNotifications();
+        onUpdate();
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const hasUnread = notifications.some(n => !n.is_read);
+
+  return (
+    <div className="notifications-panel animate-fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0' }}>Recent Activity Notifications</h2>
+        {notifications.length > 0 && hasUnread && (
+          <button onClick={handleMarkAllRead} className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <Check size={16} /> Mark All Read
+          </button>
+        )}
+      </div>
+
+      <div className="notifications-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {loading ? (
+          <div className="glass-card text-center" style={{ padding: '40px' }}>Loading notifications...</div>
+        ) : notifications.length === 0 ? (
+          <div className="glass-card text-center" style={{ padding: '40px' }}>No notifications found.</div>
+        ) : (
+          notifications.map((n) => (
+            <div 
+              key={n.id} 
+              className="notification-item glass-card" 
+              style={{ 
+                padding: '20px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                borderLeft: n.is_read ? '1px solid var(--border-color)' : '4px solid var(--saffron)',
+                background: n.is_read ? 'var(--bg-card)' : 'rgba(245, 158, 11, 0.04)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1', marginRight: '24px' }}>
+                <div style={{ 
+                  padding: '10px', 
+                  borderRadius: '50%', 
+                  background: n.type === 'like' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: n.type === 'like' ? 'var(--saffron)' : '#10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {n.type === 'like' ? <ThumbsUp size={18} /> : <MessageSquare size={18} />}
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', margin: '0 0 4px', fontWeight: n.is_read ? 'normal' : '600' }}>
+                    {n.message}
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                    {n.post && (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        Post: <strong style={{ color: 'var(--saffron)' }}>{n.post.title}</strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {n.type === 'comment' && (
+                  <button 
+                    onClick={() => setActiveTab('comments')} 
+                    className="btn btn-saffron btn-sm" 
+                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                  >
+                    Go to Comments
+                  </button>
+                )}
+                {!n.is_read && (
+                  <button 
+                    onClick={() => handleMarkRead(n.id)} 
+                    className="btn btn-outline btn-sm" 
+                    style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                  >
+                    Mark Read
+                  </button>
+                )}
+                <button 
+                  onClick={() => handleDelete(n.id)} 
+                  className="btn btn-outline btn-sm text-red" 
+                  style={{ padding: '6px', minWidth: '32px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                  title="Delete Notification"
+                >
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

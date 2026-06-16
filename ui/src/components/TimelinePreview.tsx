@@ -71,8 +71,17 @@ export default function TimelinePreview() {
     <section id="timeline" className="timeline-section section-padding">
       <div className="container">
         <div className="section-header">
+          <div className="section-eyebrow">
+            <div className="eyebrow-line" aria-hidden="true" />
+            Timeline
+            <div className="eyebrow-line" aria-hidden="true" />
+          </div>
           <h2 className="section-title">Recent Timeline</h2>
-          <div className="section-bar"></div>
+          <div className="section-divider" aria-hidden="true">
+            <div className="divider-line divider-saffron" />
+            <div className="divider-dot" />
+            <div className="divider-line divider-green" />
+          </div>
           <p className="section-subtitle">Track the latest activities, labor union engagements, and social work in progress.</p>
         </div>
 

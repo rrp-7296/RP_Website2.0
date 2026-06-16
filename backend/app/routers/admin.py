@@ -17,9 +17,14 @@ from app.models.gallery import GalleryImage, GalleryTag
 from app.models.message import ContactMessage
 from app.models.subscription import Subscription
 from app.models.metrics import PageMetric
+from app.models.notification import Notification
 from app.middleware.auth import get_current_admin
 from app.services.file_service import save_upload, delete_upload
+from app.services.email_service import send_contact_reply
 from app.schemas.common import MessageResponse
+from app.schemas.notification import NotificationOut
+from app.schemas.message import ContactMessageReply
+
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
 
@@ -35,6 +40,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db)):
     unread_messages = (await db.execute(select(func.count()).select_from(ContactMessage).where(ContactMessage.is_read == False, ContactMessage.is_deleted == False))).scalar()
     pending_comments = (await db.execute(select(func.count()).select_from(BlogComment).where(BlogComment.is_approved == False))).scalar()
     total_subscribers = (await db.execute(select(func.count()).select_from(Subscription))).scalar()
+    unread_notifications = (await db.execute(select(func.count()).select_from(Notification).where(Notification.is_read == False))).scalar()
 
     return {
         "total_blogs": total_blogs,
@@ -44,6 +50,7 @@ async def dashboard_stats(db: AsyncSession = Depends(get_db)):
         "unread_messages": unread_messages,
         "pending_comments": pending_comments,
         "total_subscribers": total_subscribers,
+        "unread_notifications": unread_notifications,
     }
 
 
@@ -237,6 +244,39 @@ async def mark_message_read(msg_id: int, db: AsyncSession = Depends(get_db)):
     return MessageResponse(message="Message marked as read")
 
 
+@router.post("/messages/{msg_id}/reply", response_model=MessageResponse)
+async def reply_to_message(
+    msg_id: int,
+    data: ContactMessageReply,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reply to a contact form message via email and save status."""
+    result = await db.execute(select(ContactMessage).where(ContactMessage.id == msg_id))
+    msg = result.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    # Send email
+    success = await send_contact_reply(
+        to_email=msg.email,
+        to_name=msg.name,
+        original_subject=msg.subject,
+        reply_body=data.reply_message,
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send email. Check SMTP settings.")
+
+    # Update database
+    msg.is_replied = True
+    msg.reply_message = data.reply_message
+    msg.replied_at = func.now()
+    msg.is_read = True  # Automatically mark as read if replied
+
+    return MessageResponse(message="Reply email sent successfully and recorded.")
+
+
+
 # ─── Comments Management ──────────────────────────────────────────
 @router.get("/comments")
 async def list_pending_comments(db: AsyncSession = Depends(get_db)):
@@ -263,3 +303,42 @@ async def delete_comment(comment_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Comment not found")
     await db.delete(comment)
     return MessageResponse(message="Comment deleted")
+
+
+# ─── Notifications Management ──────────────────────────────────────
+@router.get("/notifications", response_model=list[NotificationOut])
+async def list_notifications(db: AsyncSession = Depends(get_db)):
+    """List all notifications."""
+    query = select(Notification).order_by(desc(Notification.created_at))
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.patch("/notifications/{notif_id}/read", response_model=MessageResponse)
+async def mark_notification_read(notif_id: int, db: AsyncSession = Depends(get_db)):
+    """Mark a specific notification as read."""
+    result = await db.execute(select(Notification).where(Notification.id == notif_id))
+    notif = result.scalar_one_or_none()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notif.is_read = True
+    return MessageResponse(message="Notification marked as read")
+
+
+@router.post("/notifications/read-all", response_model=MessageResponse)
+async def mark_all_notifications_read(db: AsyncSession = Depends(get_db)):
+    """Mark all notifications as read."""
+    from sqlalchemy import update
+    await db.execute(update(Notification).where(Notification.is_read == False).values(is_read=True))
+    return MessageResponse(message="All notifications marked as read")
+
+
+@router.delete("/notifications/{notif_id}", response_model=MessageResponse)
+async def delete_notification(notif_id: int, db: AsyncSession = Depends(get_db)):
+    """Delete a specific notification."""
+    result = await db.execute(select(Notification).where(Notification.id == notif_id))
+    notif = result.scalar_one_or_none()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    await db.delete(notif)
+    return MessageResponse(message="Notification deleted")

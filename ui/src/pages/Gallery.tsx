@@ -11,16 +11,15 @@ interface GalleryImage {
 }
 
 const staticTags = [
-  { value: "all", label: "All" },
-  { value: "international", label: "International" },
-  { value: "intuc", label: "INTUC" },
-  { value: "union", label: "Unions" },
-  { value: "press", label: "Press" },
-  { value: "timeline", label: "Timeline" },
-  { value: "others", label: "Others" }
+  { value: "all", label: "All Photos" },
+  { value: "international", label: "International Delegations" },
+  { value: "intuc", label: "INTUC Leadership" },
+  { value: "union", label: "Union Engagements" },
+  { value: "press", label: "Press & Media" },
+  { value: "timeline", label: "Timeline Events" },
+  { value: "others", label: "Welfare & Social Work" }
 ];
 
-// Fallback image listing from copied assets
 const fallbackImages: GalleryImage[] = [
   { id: 1, filename: "/gallery/g1.jpg", tag: "union", caption: "Union general body meeting at Adityapur industrial area." },
   { id: 2, filename: "/gallery/g2.jpg", tag: "intuc", caption: "Jharkhand INTUC delegation presenting demands to labor commissioner." },
@@ -38,22 +37,9 @@ const fallbackImages: GalleryImage[] = [
 
 export default function Gallery() {
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const [tags, setTags] = useState(staticTags);
   const [selectedTag, setSelectedTag] = useState('all');
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Fetch Tags
-    fetch(apiUrl('/gallery/tags'))
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.tags) {
-          setTags(data.tags);
-        }
-      })
-      .catch(() => { /* use static tags fallback */ });
-  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -101,6 +87,97 @@ export default function Gallery() {
     setLightboxIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : 0));
   };
 
+  // Helper to group images by tag
+  const getGroupedImages = () => {
+    const groups: { [key: string]: GalleryImage[] } = {};
+    images.forEach(img => {
+      const tagKey = img.tag.toLowerCase();
+      if (!groups[tagKey]) {
+        groups[tagKey] = [];
+      }
+      groups[tagKey].push(img);
+    });
+    return groups;
+  };
+
+  const renderGalleryContent = () => {
+    if (images.length === 0) {
+      return (
+        <div className="text-center" style={{ padding: '60px 0', color: 'var(--text-secondary)' }}>
+          No images found in this category.
+        </div>
+      );
+    }
+
+    if (selectedTag !== 'all') {
+      const currentTagLabel = staticTags.find(t => t.value === selectedTag)?.label || selectedTag.toUpperCase();
+      return (
+        <div className="gallery-category-section">
+          <div className="gallery-category-header">
+            <h2 className="gallery-category-title">{currentTagLabel}</h2>
+            <div className="gallery-category-line"></div>
+          </div>
+          <div className="gallery-grid-modern">
+            {images.map((img, idx) => (
+              <div key={img.id} className="gallery-item-modern glass-card" onClick={() => setLightboxIndex(idx)}>
+                <div className="gallery-img-wrapper">
+                  <img src={img.filename} alt={img.caption} className="gallery-img" loading="lazy" />
+                  <div className="gallery-hover-overlay">
+                    <ZoomIn size={28} className="zoom-icon" />
+                    <span className="gallery-hover-tag saffron">{img.tag}</span>
+                  </div>
+                </div>
+                {img.caption && (
+                  <div className="gallery-caption-box">
+                    <p className="gallery-caption-text">{img.caption}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Otherwise render all sections grouped
+    const grouped = getGroupedImages();
+    const activeSections = staticTags.filter(t => t.value !== 'all' && grouped[t.value]?.length > 0);
+
+    return (
+      <>
+        {activeSections.map((t) => (
+          <div key={t.value} className="gallery-category-section">
+            <div className="gallery-category-header">
+              <h2 className="gallery-category-title">{t.label}</h2>
+              <div className="gallery-category-line"></div>
+            </div>
+            <div className="gallery-grid-modern">
+              {grouped[t.value].map((img) => {
+                const globalIdx = images.findIndex(item => item.id === img.id);
+                return (
+                  <div key={img.id} className="gallery-item-modern glass-card" onClick={() => setLightboxIndex(globalIdx)}>
+                    <div className="gallery-img-wrapper">
+                      <img src={img.filename} alt={img.caption} className="gallery-img" loading="lazy" />
+                      <div className="gallery-hover-overlay">
+                        <ZoomIn size={28} className="zoom-icon" />
+                        <span className="gallery-hover-tag saffron">{img.tag}</span>
+                      </div>
+                    </div>
+                    {img.caption && (
+                      <div className="gallery-caption-box">
+                        <p className="gallery-caption-text">{img.caption}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  };
+
   return (
     <div className="gallery-page page-container container section-padding" style={{ paddingTop: '120px' }}>
       <div className="page-breadcrumbs">
@@ -116,46 +193,21 @@ export default function Gallery() {
 
       {/* Filter Nav */}
       <div className="gallery-filter-nav glass-card">
-        {tags.map((tag) => (
+        {staticTags.map((tag) => (
           <button
             key={tag.value}
             className={`filter-btn ${selectedTag === tag.value ? 'active' : ''}`}
             onClick={() => setSelectedTag(tag.value)}
           >
-            {tag.label}
+            {tag.label === "All Photos" ? "All Categories" : tag.label.split(' ')[0]}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="text-center" style={{ padding: '60px 0' }}>Loading gallery...</div>
+        <div className="text-center" style={{ padding: '60px 0', color: 'var(--text-muted)' }}>Loading gallery photos...</div>
       ) : (
-        <>
-          {images.length === 0 ? (
-            <div className="text-center" style={{ padding: '40px 0', color: 'var(--text-secondary)' }}>
-              No images found in this category.
-            </div>
-          ) : (
-            <div className="gallery-masonry">
-              {images.map((img, idx) => (
-                <div key={img.id} className="gallery-item glass-card animate-fade-in" onClick={() => setLightboxIndex(idx)}>
-                  <div className="gallery-img-wrapper">
-                    <img src={img.filename} alt={img.caption} className="gallery-img" loading="lazy" />
-                    <div className="gallery-hover-overlay">
-                      <ZoomIn size={32} className="zoom-icon" />
-                      <span className="gallery-hover-tag saffron">{img.tag.toUpperCase()}</span>
-                    </div>
-                  </div>
-                  {img.caption && (
-                    <div className="gallery-caption-box">
-                      <p className="gallery-caption-text">{img.caption}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+        renderGalleryContent()
       )}
 
       {/* Lightbox Modal */}

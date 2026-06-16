@@ -62,7 +62,7 @@ export default function BiographyPage() {
                   key={i} 
                   className={`dot-indicator ${i === activeSlide ? 'active' : ''}`}
                   onClick={() => setActiveSlide(i)}
-                  style={{ width: '10px', height: '10px', borderRadius: '50%', background: i === activeSlide ? 'var(--color-saffron)' : 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
+                  style={{ width: '10px', height: '10px', borderRadius: '50%', background: i === activeSlide ? 'var(--saffron)' : 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
                 />
               ))}
             </div>

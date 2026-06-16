@@ -23,7 +23,20 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return json.loads(self.CORS_ORIGINS)
+        origins = json.loads(self.CORS_ORIGINS)
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            origins.append(f"http://{local_ip}:5173")
+            origins.append(f"http://{local_ip}:5174")
+            origins.append(f"http://{local_ip}:8000")
+            origins.append(f"http://{local_ip}")
+        except Exception:
+            pass
+        return list(set(origins))
 
     # Uploads
     UPLOAD_DIR: str = "uploads"

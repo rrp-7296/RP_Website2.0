@@ -19,7 +19,15 @@ class ContactMessageOut(BaseModel):
     subject: str
     message: str
     is_read: bool = False
+    reply_message: Optional[str] = None
+    replied_at: Optional[datetime] = None
+    is_replied: bool = False
     created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class ContactMessageReply(BaseModel):
+    reply_message: str
+

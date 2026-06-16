@@ -3,12 +3,13 @@ Blog router — public endpoints for blog posts, comments, and likes.
 """
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.blog import BlogPost, BlogComment, BlogLike
+from app.models.notification import Notification
 from app.schemas.blog import (
     BlogPostListItem, BlogPostDetail, BlogCommentOut,
     CommentCreate, LikeCreate,
@@ -16,6 +17,7 @@ from app.schemas.blog import (
 from app.schemas.common import PaginatedResponse, MessageResponse
 
 router = APIRouter(prefix="/blogs", tags=["Blog"])
+
 
 
 @router.get("", response_model=PaginatedResponse[BlogPostListItem])
@@ -97,7 +99,7 @@ async def get_blog(post_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{post_id}/like", response_model=MessageResponse)
-async def like_blog(post_id: int, data: LikeCreate, db: AsyncSession = Depends(get_db)):
+async def like_blog(post_id: int, data: LikeCreate = Body(default=LikeCreate()), db: AsyncSession = Depends(get_db)):
     """Like a blog post."""
     result = await db.execute(select(BlogPost).where(BlogPost.id == post_id))
     post = result.scalar_one_or_none()
@@ -108,6 +110,15 @@ async def like_blog(post_id: int, data: LikeCreate, db: AsyncSession = Depends(g
     db.add(like)
     post.likes_count += 1
     await db.flush()
+
+    # Create notification for the like
+    notif = Notification(
+        type="like",
+        post_id=post_id,
+        item_id=like.id,
+        message=f"'{data.name}' liked your post '{post.title}'"
+    )
+    db.add(notif)
 
     return MessageResponse(message=f"Post liked! Total likes: {post.likes_count}")
 
@@ -128,5 +139,15 @@ async def add_comment(post_id: int, data: CommentCreate, db: AsyncSession = Depe
         is_approved=False,
     )
     db.add(comment)
+    await db.flush()
+
+    # Create notification for the comment
+    notif = Notification(
+        type="comment",
+        post_id=post_id,
+        item_id=comment.id,
+        message=f"New comment from '{data.name}' on '{post.title}'"
+    )
+    db.add(notif)
 
     return MessageResponse(message="Comment submitted! It will appear after approval.")

@@ -3,6 +3,26 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Shield } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
+// Ashoka Chakra SVG (24 spokes)
+function AshokaSVG({ size = 24, className = '' }) {
+  const spokes = Array.from({ length: 24 }, (_, i) => i * 15);
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" className={className} fill="currentColor">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" />
+      <circle cx="50" cy="50" r="6" />
+      <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      {spokes.map(angle => {
+        const rad = (angle * Math.PI) / 180;
+        const x1 = 50 + 8 * Math.cos(rad);
+        const y1 = 50 + 8 * Math.sin(rad);
+        const x2 = 50 + 32 * Math.cos(rad);
+        const y2 = 50 + 32 * Math.sin(rad);
+        return <line key={angle} x1={x1} y1={y1} x2={x2} y2={y2} stroke="currentColor" strokeWidth="1.5" />;
+      })}
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,9 +30,7 @@ export default function Navbar() {
   const location = useLocation();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -20,81 +38,103 @@ export default function Navbar() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     setIsOpen(false);
-    
     if (location.pathname === '/') {
-      const element = document.getElementById(targetId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
     } else {
       navigate('/', { state: { targetId } });
     }
   };
 
-  // Scroll to section after navigating to homepage from a subpage
   useEffect(() => {
     if (location.pathname === '/' && location.state && (location.state as any).targetId) {
       const targetId = (location.state as any).targetId;
       setTimeout(() => {
-        const element = document.getElementById(targetId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-      // clear state
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
+  const navLinks = [
+    { label: 'Home', id: 'home' },
+    { label: 'About', id: 'about' },
+    { label: 'Achievements', id: 'achievements' },
+    { label: 'Timeline', id: 'timeline' },
+    { label: 'News', id: 'news' },
+    { label: 'Blog', id: 'blog' },
+    { label: 'Contact', id: 'contact' },
+  ];
+
   return (
-    <nav className={`nav-header ${isScrolled ? 'nav-scrolled' : ''}`}>
-      <div className="container nav-container">
-        <Link to="/" className="nav-logo">
-          <span className="logo-saffron">RAKESHWAR</span>
-          <span className="logo-white">&nbsp;PANDEY</span>
-          <div className="logo-sub">Jharkhand INTUC President</div>
-        </Link>
+    <>
+      {/* Animated tricolor bar at the very top */}
+      <div className="tricolor-bar-top" aria-hidden="true" />
 
-        {/* Desktop Menu */}
-        <div className="nav-menu-desktop">
-          <a href="#home" onClick={(e) => handleNavClick(e, 'home')}>Home</a>
-          <a href="#about" onClick={(e) => handleNavClick(e, 'about')}>About</a>
-          <a href="#achievements" onClick={(e) => handleNavClick(e, 'achievements')}>Achievements</a>
-          <a href="#timeline" onClick={(e) => handleNavClick(e, 'timeline')}>Timeline</a>
-          <a href="#news" onClick={(e) => handleNavClick(e, 'news')}>News</a>
-          <a href="#blog" onClick={(e) => handleNavClick(e, 'blog')}>Blog</a>
-          <Link to="/gallery">Gallery</Link>
-          <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')}>Contact</a>
-          <ThemeToggle style={{ marginRight: '8px' }} />
-          <Link to="/admin" className="admin-link-icon" title="Admin Panel">
-            <Shield size={18} />
+      <nav className={`nav-header ${isScrolled ? 'nav-scrolled' : ''}`}>
+        <div className="container nav-container">
+          {/* Logo */}
+          <Link to="/" className="nav-logo" aria-label="Rakeshwar Pandey Homepage">
+            <div className="logo-name">
+              <span className="logo-saffron">RAKESHWAR&nbsp;</span>
+              <span className="logo-green">PANDEY</span>
+            </div>
+            <div className="logo-sub">Jharkhand INTUC President</div>
           </Link>
+
+          {/* Desktop Menu */}
+          <div className="nav-menu-desktop" role="navigation" aria-label="Main Navigation">
+            {navLinks.map(link => (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                onClick={(e) => handleNavClick(e, link.id)}
+              >
+                {link.label}
+              </a>
+            ))}
+            <Link to="/gallery">Gallery</Link>
+            <ThemeToggle style={{ marginLeft: '8px' }} />
+            <Link to="/admin" className="admin-link-icon" title="Admin Panel" aria-label="Admin Panel">
+              <Shield size={16} />
+            </Link>
+          </div>
+
+          {/* Mobile Toggle */}
+          <button
+            className="nav-toggle"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle Navigation"
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
 
-        {/* Mobile Hamburger Toggle */}
-        <button className="nav-toggle" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Navigation">
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Mobile Drawer */}
-      <div className={`nav-menu-mobile ${isOpen ? 'open' : ''}`}>
-        <a href="#home" onClick={(e) => handleNavClick(e, 'home')}>Home</a>
-        <a href="#about" onClick={(e) => handleNavClick(e, 'about')}>About</a>
-        <a href="#achievements" onClick={(e) => handleNavClick(e, 'achievements')}>Achievements</a>
-        <a href="#timeline" onClick={(e) => handleNavClick(e, 'timeline')}>Timeline</a>
-        <a href="#news" onClick={(e) => handleNavClick(e, 'news')}>News</a>
-        <a href="#blog" onClick={(e) => handleNavClick(e, 'blog')}>Blog</a>
-        <Link to="/gallery" onClick={() => setIsOpen(false)}>Gallery</Link>
-        <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')}>Contact</a>
-        <Link to="/admin" onClick={() => setIsOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Shield size={18} /> Admin Panel
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderTop: '1px solid var(--border-glass)' }}>
-          <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>Toggle Theme:</span>
-          <ThemeToggle />
+        {/* Mobile Drawer */}
+        <div className={`nav-menu-mobile ${isOpen ? 'open' : ''}`} role="navigation" aria-label="Mobile Navigation">
+          {navLinks.map(link => (
+            <a
+              key={link.id}
+              href={`#${link.id}`}
+              onClick={(e) => handleNavClick(e, link.id)}
+            >
+              {link.label}
+            </a>
+          ))}
+          <Link to="/gallery" onClick={() => setIsOpen(false)}>Gallery</Link>
+          <Link
+            to="/admin"
+            onClick={() => setIsOpen(false)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Shield size={16} /> Admin Panel
+          </Link>
+          <div className="nav-mobile-theme-row">
+            <span>Toggle Theme:</span>
+            <ThemeToggle />
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }

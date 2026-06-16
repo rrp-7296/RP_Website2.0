@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme 3 — Royal Purple & Gold</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: #0f0520; overflow: hidden; width: 1280px; height: 720px; position: relative; }
+
+  /* Animated gradient BG */
+  .bg-gradient { position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(88,28,135,0.6) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(124,58,237,0.3) 0%, transparent 40%), #0f0520; animation: bg-shift 8s ease-in-out infinite alternate; }
+  @keyframes bg-shift { from{background:radial-gradient(ellipse at 20% 50%,rgba(88,28,135,0.6),transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(124,58,237,0.3),transparent 40%),#0f0520} to{background:radial-gradient(ellipse at 40% 60%,rgba(88,28,135,0.7),transparent 50%),radial-gradient(ellipse at 90% 40%,rgba(124,58,237,0.4),transparent 40%),#0f0520} }
+
+  /* Gold orbs */
+  .orb { position: absolute; border-radius: 50%; filter: blur(80px); }
+  .orb1 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(255,215,0,0.2), transparent 70%); top: -100px; right: 100px; animation: drift 10s ease-in-out infinite; }
+  .orb2 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(192,132,252,0.25), transparent 70%); bottom: -50px; left: 50px; animation: drift 7s ease-in-out infinite reverse; }
+  .orb3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,140,0,0.2), transparent 70%); top: 200px; left: 400px; animation: drift 6s ease-in-out infinite; }
+  @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-20px)} }
+
+  /* Hexagon grid background */
+  .hex-grid { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V17L28 1l28 16v33L28 66zm0 34L0 84V51l28 16 28-16v33L28 100z' fill='none' stroke='rgba(255,215,0,0.04)' stroke-width='1'/%3E%3C/svg%3E"); background-size: 56px 100px; }
+
+  /* Floating particles */
+  .particle { position: absolute; border-radius: 50%; animation: particle-float 5s ease-in-out infinite; }
+  @keyframes particle-float { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-25px);opacity:1} }
+  .p1{width:4px;height:4px;background:#FFD700;left:10%;top:30%;animation-delay:0s}
+  .p2{width:3px;height:3px;background:#FFD700;left:30%;top:70%;animation-delay:-1s}
+  .p3{width:5px;height:5px;background:#C084FC;left:55%;top:20%;animation-delay:-2s}
+  .p4{width:3px;height:3px;background:#FFD700;left:75%;top:80%;animation-delay:-3s}
+  .p5{width:4px;height:4px;background:#FF8C00;left:85%;top:35%;animation-delay:-1.5s}
+  .p6{width:2px;height:2px;background:#FFD700;left:20%;top:50%;animation-delay:-4s}
+  .p7{width:3px;height:3px;background:#C084FC;left:65%;top:60%;animation-delay:-2.5s}
+  .p8{width:4px;height:4px;background:#FFD700;left:45%;top:85%;animation-delay:-0.5s}
+
+  /* Diagonal gold line */
+  .gold-line { position: absolute; top: 0; left: 40%; width: 1px; height: 100%; background: linear-gradient(to bottom, transparent, rgba(255,215,0,0.3) 30%, rgba(255,215,0,0.3) 70%, transparent); animation: line-glow 3s ease-in-out infinite; }
+  @keyframes line-glow { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  /* Nav */
+  nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 24px 60px; border-bottom: 1px solid rgba(255,215,0,0.1); }
+  .logo { font-size: 1.3rem; font-weight: 800; color: #fff; }
+  .logo span { background: linear-gradient(135deg, #FFD700, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a { color: rgba(255,255,255,0.55); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+  .nav-links a.active { color: #FFD700; }
+  .nav-cta { background: linear-gradient(135deg, #FFD700, #FF8C00); color: #1a0533; padding: 10px 24px; border-radius: 50px; font-weight: 800; font-size: 0.85rem; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+
+  /* Hero */
+  .hero { position: relative; z-index: 5; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 50px 60px 0; gap: 40px; height: calc(720px - 80px); }
+
+  /* Crown badge */
+  .crown-badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,140,0,0.1)); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 8px 16px; margin-bottom: 24px; animation: badge-shimmer 2s ease-in-out infinite; }
+  @keyframes badge-shimmer { 0%,100%{border-color:rgba(255,215,0,0.3)} 50%{border-color:rgba(255,215,0,0.7)} }
+  .crown-badge span { background: linear-gradient(135deg, #FFD700, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  h1 { font-size: 4.2rem; font-weight: 900; line-height: 1.05; margin-bottom: 16px; }
+  h1 .gold { background: linear-gradient(135deg, #FFD700, #FF8C00, #FFD700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 200% auto; animation: gold-shift 3s ease-in-out infinite; }
+  @keyframes gold-shift { 0%{background-position:0%} 50%{background-position:100%} 100%{background-position:0%} }
+  h1 .white { color: #F5E6FF; display: block; }
+  .subtitle { color: rgba(255,255,255,0.5); font-size: 0.98rem; line-height: 1.7; margin-bottom: 36px; max-width: 440px; }
+
+  .cta-group { display: flex; gap: 16px; }
+  .btn-gold { background: linear-gradient(135deg, #FFD700, #FF8C00); color: #1a0533; padding: 14px 32px; border-radius: 50px; font-weight: 800; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 0 30px rgba(255,215,0,0.4); animation: glow 2s ease-in-out infinite; }
+  @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.4)} 50%{box-shadow:0 0 50px rgba(255,215,0,0.7)} }
+  .btn-outline { background: transparent; color: #C084FC; padding: 14px 32px; border-radius: 50px; font-weight: 700; font-size: 0.95rem; border: 2px solid rgba(192,132,252,0.5); cursor: pointer; }
+
+  .stats { display: flex; gap: 40px; margin-top: 48px; }
+  .stat-num { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #FFD700, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Right portrait */
+  .portrait-area { display: flex; justify-content: center; align-items: center; position: relative; }
+  .hex-frame { width: 320px; height: 320px; background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(124,58,237,0.2)); border: 2px solid rgba(255,215,0,0.3); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 5rem; position: relative; box-shadow: 0 0 60px rgba(255,215,0,0.15), inset 0 0 40px rgba(124,58,237,0.1); transform: rotate(3deg); }
+  .hex-frame::before { content:''; position:absolute; inset:-12px; border:1px solid rgba(255,215,0,0.1); border-radius:30px; transform:rotate(-6deg); }
+
+  /* Floating stat cards */
+  .stat-card { position:absolute; background:rgba(255,215,0,0.08); backdrop-filter:blur(10px); border:1px solid rgba(255,215,0,0.2); border-radius:12px; padding:12px 16px; animation: card-float 4s ease-in-out infinite; }
+  .stat-card1 { top:20px; right:-10px; animation-delay:0s; }
+  .stat-card2 { bottom:60px; left:-20px; animation-delay:-2s; }
+  @keyframes card-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .sc-label { font-size:0.65rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; }
+  .sc-val { font-size:1rem; font-weight:700; color:#FFD700; }
+
+  .theme-label { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #FFD700, #FF8C00); border-radius: 50px; padding: 8px 24px; color: #1a0533; font-size: 0.85rem; font-weight: 800; letter-spacing: 2px; z-index: 20; }
+</style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="hex-grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="gold-line"></div>
+  <div class="particle p1"></div><div class="particle p2"></div><div class="particle p3"></div>
+  <div class="particle p4"></div><div class="particle p5"></div><div class="particle p6"></div>
+  <div class="particle p7"></div><div class="particle p8"></div>
+
+  <nav>
+    <div class="logo">RP <span>Portfolio</span></div>
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#">Timeline</a>
+      <a href="#">Blog</a>
+      <a href="#">Gallery</a>
+      <a href="#">Contact</a>
+    </div>
+    <button class="nav-cta">Connect →</button>
+  </nav>
+
+  <div class="hero">
+    <div class="left">
+      <div class="crown-badge"><span>👑 President · INTUC Jharkhand</span></div>
+      <h1>
+        <span class="gold">Rakeshwar</span>
+        <span class="white">Pandey</span>
+      </h1>
+      <p class="subtitle">A distinguished social leader and trade union champion. Over three decades of dedicated service to workers and people of Jharkhand.</p>
+      <div class="cta-group">
+        <button class="btn-gold">View Timeline →</button>
+        <button class="btn-outline">Read Blogs</button>
+      </div>
+      <div class="stats">
+        <div><div class="stat-num">35+</div><div class="stat-label">Years Service</div></div>
+        <div><div class="stat-num">12</div><div class="stat-label">Unions Led</div></div>
+        <div><div class="stat-num">50K+</div><div class="stat-label">Workers Helped</div></div>
+      </div>
+    </div>
+    <div class="portrait-area">
+      <div class="hex-frame">🏛️</div>
+      <div class="stat-card stat-card1">
+        <div class="sc-label">Achievement</div>
+        <div class="sc-val">Wage Revised ✅</div>
+      </div>
+      <div class="stat-card stat-card2">
+        <div class="sc-label">Active Since</div>
+        <div class="sc-val">1989</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme-label">OPTION 3 — ROYAL PURPLE & GOLD</div>
+</body>
+</html>

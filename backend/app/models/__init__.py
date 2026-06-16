@@ -7,6 +7,7 @@ from app.models.gallery import GalleryImage
 from app.models.message import ContactMessage
 from app.models.subscription import Subscription
 from app.models.metrics import PageMetric
+from app.models.notification import Notification
 
 __all__ = [
     "AdminUser",
@@ -17,4 +18,6 @@ __all__ = [
     "ContactMessage",
     "Subscription",
     "PageMetric",
+    "Notification",
 ]
+

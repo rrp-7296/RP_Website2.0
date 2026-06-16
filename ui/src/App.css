@@ -1,1 +1,9 @@
-/* App-specific CSS overrides if any */
+/* App-level overrides */
+.main-content-layout {
+  min-height: 100vh;
+}
+
+/* Ensure admin pages don't inherit the nav padding */
+.main-content-layout > *:not(.page-container) {
+  /* Admin login/dashboard handle their own layout */
+}

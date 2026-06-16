@@ -16,4 +16,8 @@ class ContactMessage(Base):
     date = Column(DateTime, nullable=True)
     is_read = Column(Boolean, default=False)
     is_deleted = Column(Boolean, default=False)
+    reply_message = Column(Text, nullable=True)
+    replied_at = Column(DateTime, nullable=True)
+    is_replied = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
+
