@@ -20,9 +20,28 @@ import './App.css';
 function AppContent() {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [prevPath, setPrevPath] = useState(location.pathname);
+
+  React.useEffect(() => {
+    if (location.pathname !== prevPath) {
+      // Trigger loader on route changes (unless it's admin path)
+      if (!location.pathname.startsWith('/admin') && !prevPath.startsWith('/admin')) {
+        setRouteLoading(true);
+        window.scrollTo(0, 0);
+      }
+      setPrevPath(location.pathname);
+    }
+  }, [location.pathname, prevPath]);
 
   return (
     <>
+      {routeLoading && (
+        <PageLoader
+          minDuration={1200}
+          onDone={() => setRouteLoading(false)}
+        />
+      )}
       {!isAdminPath && <Navbar />}
       <main className="main-content-layout">
         <Routes>
