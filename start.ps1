@@ -54,14 +54,14 @@ Start-Process powershell -ArgumentList @(
 Start-Sleep -Seconds 2
 
 # ── Start Frontend ─────────────────────────────────────────────────────────
-Write-Status "[2/2] Starting Frontend (Vite + React)    → http://localhost:5173" "Yellow"
+Write-Status "[2/2] Starting Frontend (Vite + React)    → http://localhost:5174" "Yellow"
 Write-Host ""
 
 $frontendDir = Join-Path $Root "ui"
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "& { `$Host.UI.RawUI.WindowTitle = 'Frontend - Vite :5173'; Set-Location '$frontendDir'; npm run dev }"
+    "& { `$Host.UI.RawUI.WindowTitle = 'Frontend - Vite :5174'; Set-Location '$frontendDir'; npm run dev }"
 )
 
 # Wait for Vite to boot
@@ -73,7 +73,7 @@ Write-Host "  ============================================================" -For
 Write-Host "   ✅  Both servers are running!" -ForegroundColor Green
 Write-Host ""
 Write-Host "   🌐  Frontend  →  " -NoNewline -ForegroundColor White
-Write-Host "http://localhost:5173" -ForegroundColor Cyan
+Write-Host "http://localhost:5174" -ForegroundColor Cyan
 Write-Host "   🔌  Backend   →  " -NoNewline -ForegroundColor White
 Write-Host "http://localhost:8000" -ForegroundColor Cyan
 Write-Host "   📖  API Docs  →  " -NoNewline -ForegroundColor White
@@ -84,4 +84,4 @@ Write-Host "  ============================================================" -For
 Write-Host ""
 
 # Open browser
-Start-Process "http://localhost:5173"
+Start-Process "http://localhost:5174"

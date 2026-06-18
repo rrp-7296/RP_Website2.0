@@ -25,7 +25,7 @@ python run.py              # Starts on http://localhost:8000
 ```bash
 cd ui
 npm install
-npm run dev                # Starts on http://localhost:5173
+npm run dev                # Starts on http://localhost:5174
 ```
 
 ### Mobile

@@ -33,9 +33,9 @@ start "Backend - FastAPI :8000" cmd /k "cd /d %~dp0backend && venv\Scripts\pytho
 :: Small delay so backend starts first
 timeout /t 2 /nobreak >nul
 
-echo  [2/2] Starting Frontend (Vite + React)    on http://localhost:5173
+echo  [2/2] Starting Frontend (Vite + React)    on http://localhost:5174
 echo.
-start "Frontend - Vite :5173" cmd /k "cd /d %~dp0ui && npm run dev"
+start "Frontend - Vite :5174" cmd /k "cd /d %~dp0ui && npm run dev"
 
 :: Wait for Vite to be ready
 timeout /t 3 /nobreak >nul
@@ -44,7 +44,7 @@ echo.
 echo  ============================================================
 echo   Both servers are starting in separate windows!
 echo.
-echo   Frontend : http://localhost:5173
+echo   Frontend : http://localhost:5174
 echo   Backend  : http://localhost:8000
 echo   API Docs : http://localhost:8000/api/docs
 echo.
@@ -54,6 +54,6 @@ echo.
 
 :: Open browser automatically
 timeout /t 2 /nobreak >nul
-start http://localhost:5173
+start http://localhost:5174
 
 pause

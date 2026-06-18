@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = 1440  # 24 hours
 
     # CORS
-    CORS_ORIGINS: str = '["http://localhost:5173","http://localhost:8000"]'
+    CORS_ORIGINS: str = '["http://localhost:5174","http://localhost:8000"]'
 
     @property
     def cors_origins_list(self) -> List[str]:
@@ -30,7 +30,6 @@ class Settings(BaseSettings):
             s.connect(("8.8.8.8", 80))
             local_ip = s.getsockname()[0]
             s.close()
-            origins.append(f"http://{local_ip}:5173")
             origins.append(f"http://{local_ip}:5174")
             origins.append(f"http://{local_ip}:8000")
             origins.append(f"http://{local_ip}")
