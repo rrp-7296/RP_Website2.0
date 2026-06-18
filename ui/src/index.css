@@ -642,14 +642,20 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 /* Right: portrait */
 .hero-image-container { position: relative; display: flex; justify-content: center; align-items: center; }
 
-/* Ashoka Chakra watermark behind portrait */
+/* Ashoka Chakra — right-side full hero watermark */
 .hero-chakra {
   position: absolute;
-  width: 420px;
-  height: 420px;
-  opacity: 0.06;
-  animation: chakra-rotate 35s linear infinite;
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 700px;
+  height: 700px;
+  opacity: 0.12;
+  animation: chakra-rotate 40s linear infinite;
   color: var(--green);
+  filter: drop-shadow(0 0 20px rgba(19, 136, 8, 0.2));
+  pointer-events: none;
+  z-index: 0;
 }
 
 .hero-portrait-frame {
