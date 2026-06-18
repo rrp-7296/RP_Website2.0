@@ -77,12 +77,13 @@ async def save_upload(
         except Exception:
             pass  # If resize fails, keep original
 
-    return unique_name
+    return f"{subfolder}/{unique_name}"
 
 
 def delete_upload(filename: str, subfolder: str) -> bool:
     """Delete an uploaded file. Returns True if deleted."""
-    file_path = Path(settings.UPLOAD_DIR) / subfolder / filename
+    base_filename = os.path.basename(filename)
+    file_path = Path(settings.UPLOAD_DIR) / subfolder / base_filename
     if file_path.exists():
         os.remove(file_path)
         return True
