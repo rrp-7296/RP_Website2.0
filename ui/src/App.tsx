@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PageLoader from './components/PageLoader';
 import Home from './pages/Home';
 import BiographyPage from './pages/BiographyPage';
 import EducationCareerPage from './pages/EducationCareerPage';
@@ -44,10 +45,25 @@ function AppContent() {
 }
 
 function App() {
+  const [loading, setLoading] = useState(true);
+
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <>
+      {/* Full-screen intro loader — shown once on app boot */}
+      {loading && (
+        <PageLoader
+          minDuration={2000}
+          onDone={() => setLoading(false)}
+        />
+      )}
+
+      {/* Main app — rendered underneath so it's ready instantly after loader */}
+      <div style={{ visibility: loading ? 'hidden' : 'visible' }}>
+        <Router>
+          <AppContent />
+        </Router>
+      </div>
+    </>
   );
 }
 
