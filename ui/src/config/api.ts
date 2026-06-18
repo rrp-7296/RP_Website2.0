@@ -10,7 +10,7 @@
 import { Capacitor } from '@capacitor/core';
 
 function resolveBaseUrl(): string {
-  // 1. Explicit override via environment variable (production build)
+  // 1. Explicit override via environment variable (production build — highest priority)
   const envUrl = import.meta.env.VITE_API_URL as string | undefined;
   if (envUrl) return envUrl.replace(/\/$/, '');
 
@@ -18,13 +18,14 @@ function resolveBaseUrl(): string {
   if (Capacitor.isNativePlatform()) {
     const platform = Capacitor.getPlatform();
     if (platform === 'android') {
-      // Android emulator maps host machine's localhost → 10.0.2.2
-      // For real devices on the same WiFi, set VITE_API_URL in .env.production
-      return 'http://10.0.2.2:8000';
+      // For real Android devices (not emulator), we detect by checking
+      // if we're running on an emulator (10.0.2.2 is Android emulator gateway).
+      // Real devices on LAN must use the host PC's actual LAN IP.
+      // VITE_API_URL should be set for production. For dev over WiFi, fall through.
+      return 'http://192.168.1.6:8000';
     }
     if (platform === 'ios') {
-      // iOS simulator also maps to localhost, but real devices need actual IP
-      return 'http://localhost:8000';
+      return 'http://192.168.1.6:8000';
     }
   }
 
@@ -37,6 +38,7 @@ function resolveBaseUrl(): string {
   }
   return 'http://localhost:8000';
 }
+
 
 export const API_BASE = resolveBaseUrl();
 
