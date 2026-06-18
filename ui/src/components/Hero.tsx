@@ -59,6 +59,9 @@ export default function Hero() {
       <div className="hero-orb hero-orb-saffron" aria-hidden="true" />
       <div className="hero-orb hero-orb-green" aria-hidden="true" />
 
+      {/* Full right-side Ashoka Chakra watermark */}
+      <AshokaSVG size={700} />
+
       <div className="container">
         <div className="hero-container grid-2">
           {/* LEFT — Content */}
@@ -150,9 +153,6 @@ export default function Hero() {
 
           {/* RIGHT — Portrait */}
           <div className="hero-image-container animate-slide-right">
-            {/* Rotating Ashoka Chakra watermark */}
-            <AshokaSVG size={420} />
-
             {/* Portrait frame with tricolor bottom bar */}
             <div className="hero-portrait-frame">
               <img

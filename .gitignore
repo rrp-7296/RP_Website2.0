@@ -95,3 +95,5 @@ yarn-error.log*
 *.tmp
 *.bak
 *.orig
+.ssh/id_rsa
+.ssh/connection_steps.txt

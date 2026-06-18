@@ -174,14 +174,18 @@ const PageLoader: React.FC<PageLoaderProps> = ({
         /* ── Ashoka chakra in center ── */
         .rp-chakra-wrap {
           position: absolute;
-          width: 36px; height: 36px;
+          width: 40px; height: 40px;
           display: flex; align-items: center; justify-content: center;
         }
         .rp-chakra {
-          font-size: 28px;
-          animation: rp-ashoka-spin 6s linear infinite;
+          font-size: 34px;
+          line-height: 1;
+          animation: rp-ashoka-spin 5s linear infinite;
           user-select: none;
-          filter: drop-shadow(0 0 6px rgba(13,37,89,0.4));
+          color: var(--navy, #0D2559);
+          filter:
+            drop-shadow(0 0 6px rgba(13, 37, 89, 0.7))
+            drop-shadow(0 0 14px rgba(13, 37, 89, 0.4));
         }
 
         /* ── Orbit dots ── */
@@ -338,7 +342,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({
 
             {/* Ashoka Chakra */}
             <div className="rp-chakra-wrap">
-              <span className="rp-chakra" role="img" aria-label="Ashoka Chakra">⚙</span>
+              <span className="rp-chakra" role="img" aria-label="Ashoka Chakra">&#9784;</span>
             </div>
           </div>
 
