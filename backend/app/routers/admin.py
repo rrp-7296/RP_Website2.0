@@ -151,6 +151,14 @@ async def delete_timeline(event_id: int, db: AsyncSession = Depends(get_db)):
     if not event:
         raise HTTPException(status_code=404, detail="Timeline event not found")
     event.is_deleted = True
+
+    # Delete corresponding gallery image if it exists
+    gallery_result = await db.execute(select(GalleryImage).where(GalleryImage.source_timeline_id == event_id))
+    gallery_img = gallery_result.scalar_one_or_none()
+    if gallery_img:
+        delete_upload(gallery_img.filename, "timeline")
+        await db.delete(gallery_img)
+
     return MessageResponse(message="Timeline event deleted")
 
 
