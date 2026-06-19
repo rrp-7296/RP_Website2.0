@@ -32,7 +32,7 @@ Most shared hosts use **Phusion Passenger** to run Python apps under Apache.
 2. Search for and open **"Setup Python App"**.
 3. Click **Create Application**.
 4. Configure the settings:
-   - **Python Version**: Select `3.11` or `3.12`.
+   - **Python Version**: Select `3.9` (e.g., `3.9.25` or `3.9.x`).
    - **Application root**: `portfolio-backend` (creates a directory at `/home/your_username/portfolio-backend`).
    - **Application URL**: `yourdomain.com/api` (this routes `/api` requests to Python).
    - **Application startup file**: `passenger_wsgi.py` (leave as default).
