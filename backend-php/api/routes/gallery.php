@@ -32,7 +32,7 @@ if ($method === 'GET' && $path === '/gallery') {
         $stmt = $db->prepare(
             'SELECT id, filename, original_name, tag, caption, uploaded_at, source_timeline_id
              FROM gallery_images
-             WHERE is_published = 1 AND tag = ?
+             WHERE (is_published = 1 OR is_published IS NULL) AND tag = ?
              ORDER BY uploaded_at DESC
              LIMIT ?'
         );
@@ -41,12 +41,13 @@ if ($method === 'GET' && $path === '/gallery') {
         $stmt = $db->prepare(
             'SELECT id, filename, original_name, tag, caption, uploaded_at, source_timeline_id
              FROM gallery_images
-             WHERE is_published = 1
+             WHERE (is_published = 1 OR is_published IS NULL)
              ORDER BY uploaded_at DESC
              LIMIT ?'
         );
         $stmt->execute([$limit]);
     }
+
 
     json_success($stmt->fetchAll());
 }

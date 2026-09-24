@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, Eye, ThumbsUp, Home as HomeIcon, MessageSquare, Send, Heart } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
+import ShareButtons from '../components/ShareButtons';
+import { useVisitor } from '../context/VisitorContext';
+
 
 interface Comment {
   id: number;
@@ -85,9 +88,18 @@ export default function BlogPost() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentMessage, setCommentMessage] = useState('');
 
+  const { visitor, requireVisitor, saveVisitor } = useVisitor();
+
   // Like State
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+
+  // Auto-fill commenter name if visitor profile exists
+  useEffect(() => {
+    if (visitor && visitor.name && !commenterName) {
+      setCommenterName(visitor.name);
+    }
+  }, [visitor]);
 
   const getBlogCategory = (p: BlogPost) => {
     if (p.id === 1 || p.title.toLowerCase().includes('union') || p.title.toLowerCase().includes('labor')) {
@@ -144,25 +156,34 @@ export default function BlogPost() {
       });
   }, [id]);
 
-  const handleLike = async () => {
+  const handleLike = () => {
     if (liked) return;
-    setLiked(true);
-    setLikesCount(prev => prev + 1);
+    requireVisitor(async (prof) => {
+      setLiked(true);
+      setLikesCount(prev => prev + 1);
 
-    try {
-      await fetch(apiUrl(`/blogs/${id}/like`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Anonymous' })
-      });
-    } catch (err) {
-      // Ignore background errors
-    }
+      try {
+        await fetch(apiUrl(`/blogs/${id}/like`), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: prof.name })
+        });
+      } catch (err) {
+        // Ignore background errors
+      }
+    });
   };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commenterName || !commentText) return;
+
+    // Save profile to visitor profile if not saved
+    saveVisitor({
+      name: commenterName.trim(),
+      email: visitor?.email,
+      phone: visitor?.phone
+    });
 
     setSubmittingComment(true);
     setCommentMessage('');
@@ -243,8 +264,9 @@ export default function BlogPost() {
             ))}
           </div>
 
-          {/* Likes Footer */}
-          <div className="blog-detail-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px', marginTop: '32px' }}>
+          {/* Likes & Share Footer */}
+
+          <div className="blog-detail-footer" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px', marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <button 
               onClick={handleLike} 
               className={`btn btn-saffron ${liked ? 'liked' : ''}`}
@@ -253,7 +275,9 @@ export default function BlogPost() {
             >
               <ThumbsUp size={18} /> {liked ? 'Liked!' : 'Like this post'} ({likesCount})
             </button>
+            <ShareButtons title={post.title} />
           </div>
+
         </article>
 
         {/* Comments Section */}

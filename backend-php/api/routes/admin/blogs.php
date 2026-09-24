@@ -25,7 +25,18 @@ if ($method === 'POST' && $adminPath === '/blogs') {
     $stmt->execute([$title, $description, $main_body, $filename]);
     $id = (int) $db->lastInsertId();
 
-    json_success(['id' => $id, 'message' => 'Blog post created successfully'], 200);
+    $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+    $sentStats = null;
+    if ($notify && $id) {
+        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $postLink = rtrim($siteUrl, '/') . '/#/blog/' . $id;
+        $sentStats = broadcast_email_to_subscribers($db, $title, $description ?: $main_body, $postLink, 'Blog Post');
+    }
+
+    json_success([
+        'id' => $id,
+        'message' => 'Blog post created successfully' . ($sentStats ? " ({$sentStats['sent']}/{$sentStats['total']} emails sent)" : '')
+    ], 200);
 }
 
 // PUT /admin/blogs/{id}

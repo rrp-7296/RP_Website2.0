@@ -23,7 +23,12 @@ if ($method === 'GET' && $path === '/blogs/popular') {
          LIMIT ?'
     );
     $stmt->execute([$limit]);
-    json_success($stmt->fetchAll());
+    $items = $stmt->fetchAll();
+    foreach ($items as &$item) {
+        $item['views'] = (int) ($item['view_count'] ?? 0);
+        $item['likes'] = (int) ($item['likes_count'] ?? 0);
+    }
+    json_success($items);
 }
 
 // GET /blogs (paginated)
@@ -43,6 +48,11 @@ if ($method === 'GET' && $path === '/blogs') {
         $page,
         $limit
     );
+
+    foreach ($result['items'] as &$item) {
+        $item['views'] = (int) ($item['view_count'] ?? 0);
+        $item['likes'] = (int) ($item['likes_count'] ?? 0);
+    }
 
     json_success($result);
 }
@@ -64,6 +74,9 @@ if ($method === 'GET' && ($m = match_route('/blogs/{id}', $path)) !== false) {
 
     // Increment view count
     $db->prepare('UPDATE blog_posts SET view_count = view_count + 1 WHERE id = ?')->execute([$id]);
+    $post['view_count'] = (int) $post['view_count'] + 1;
+    $post['views'] = (int) $post['view_count'];
+    $post['likes'] = (int) ($post['likes_count'] ?? 0);
 
     // Fetch approved comments
     $cStmt = $db->prepare(
@@ -75,6 +88,7 @@ if ($method === 'GET' && ($m = match_route('/blogs/{id}', $path)) !== false) {
 
     json_success($post);
 }
+
 
 // POST /blogs/{id}/like
 if ($method === 'POST' && ($m = match_route('/blogs/{id}/like', $path)) !== false) {
@@ -119,8 +133,9 @@ if ($method === 'POST' && ($m = match_route('/blogs/{id}/comments', $path)) !== 
     $id   = (int) $m['id'];
     $body = get_body();
     $name    = require_field($body, 'name');
-    $email   = require_field($body, 'email');
+    $email   = optional_field($body, 'email', '');
     $comment = require_field($body, 'comment');
+
 
     $stmt = $db->prepare('SELECT id, title FROM blog_posts WHERE id = ? AND is_deleted = 0 LIMIT 1');
     $stmt->execute([$id]);

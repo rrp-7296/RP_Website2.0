@@ -12,8 +12,12 @@ import BlogPost from './pages/BlogPost';
 import Gallery from './pages/Gallery';
 import TimelineList from './pages/TimelineList';
 import NewsList from './pages/NewsList';
+import UnsubscribePage from './pages/UnsubscribePage';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import { VisitorProvider } from './context/VisitorContext';
+import VisitorLoginModal from './components/VisitorLoginModal';
+import VisitorWelcomeToast from './components/VisitorWelcomeToast';
 import './App.css';
 
 // A layout wrapper that decides whether to show Navbar/Footer
@@ -54,11 +58,14 @@ function AppContent() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/timeline" element={<TimelineList />} />
           <Route path="/news" element={<NewsList />} />
+          <Route path="/unsubscribe" element={<UnsubscribePage />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </main>
       {!isAdminPath && <Footer />}
+      {!isAdminPath && <VisitorLoginModal />}
+      {!isAdminPath && <VisitorWelcomeToast />}
     </>
   );
 }
@@ -67,7 +74,7 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   return (
-    <>
+    <VisitorProvider>
       {/* Full-screen intro loader — shown once on app boot */}
       {loading && (
         <PageLoader
@@ -82,7 +89,7 @@ function App() {
           <AppContent />
         </Router>
       </div>
-    </>
+    </VisitorProvider>
   );
 }
 

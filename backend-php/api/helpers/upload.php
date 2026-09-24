@@ -65,47 +65,61 @@ function save_upload(string $fileKey, string $category): ?string {
         }
     }
 
-    return $filename;
+    return $category . '/' . $filename;
 }
 
 /**
  * Delete an uploaded file.
  */
-function delete_upload(string $filename, string $category): void {
-    $path = UPLOAD_DIR . '/' . $category . '/' . $filename;
+function delete_upload(string $filename, string $category = ''): void {
+    if (str_starts_with($filename, 'uploads/')) {
+        $filename = substr($filename, strlen('uploads/'));
+    }
+    if ($category !== '' && str_starts_with($filename, $category . '/')) {
+        $path = UPLOAD_DIR . '/' . $filename;
+    } elseif ($category !== '') {
+        $path = UPLOAD_DIR . '/' . $category . '/' . $filename;
+    } else {
+        $path = UPLOAD_DIR . '/' . $filename;
+    }
     if (file_exists($path)) {
         @unlink($path);
     }
 }
 
+
 /**
  * Resize an image to a max width, preserving aspect ratio.
  */
 function resize_and_save(string $srcPath, string $destPath, string $mime, int $maxWidth): void {
-    [$origW, $origH] = getimagesize($srcPath);
-
-    if ($origW <= $maxWidth) {
-        // No resize needed, just copy
-        copy($srcPath, $destPath);
+    $info = @getimagesize($srcPath);
+    if (!$info || $info[0] <= 0 || $info[0] <= $maxWidth) {
+        if (!@move_uploaded_file($srcPath, $destPath)) {
+            @copy($srcPath, $destPath);
+        }
         return;
     }
 
+    $origW  = $info[0];
+    $origH  = $info[1];
     $ratio  = $maxWidth / $origW;
     $newW   = $maxWidth;
     $newH   = (int) ($origH * $ratio);
 
     if ($mime === 'image/jpeg' || $mime === 'image/jpg') {
-        $src = imagecreatefromjpeg($srcPath);
+        $src = @imagecreatefromjpeg($srcPath);
     } elseif ($mime === 'image/png') {
-        $src = imagecreatefrompng($srcPath);
+        $src = @imagecreatefrompng($srcPath);
     } elseif ($mime === 'image/webp') {
-        $src = imagecreatefromwebp($srcPath);
+        $src = @imagecreatefromwebp($srcPath);
     } else {
         $src = null;
     }
 
     if (!$src) {
-        copy($srcPath, $destPath);
+        if (!@move_uploaded_file($srcPath, $destPath)) {
+            @copy($srcPath, $destPath);
+        }
         return;
     }
 
@@ -126,12 +140,15 @@ function resize_and_save(string $srcPath, string $destPath, string $mime, int $m
     } elseif ($mime === 'image/webp') {
         imagewebp($dst, $destPath, 85);
     } else {
-        copy($srcPath, $destPath);
+        if (!@move_uploaded_file($srcPath, $destPath)) {
+            @copy($srcPath, $destPath);
+        }
     }
 
     imagedestroy($src);
     imagedestroy($dst);
 }
+
 
 /**
  * Human-readable PHP upload error messages.

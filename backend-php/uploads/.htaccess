@@ -1,1 +1,7 @@
-Options -Indexes
+# Security: Prevent execution of any scripts inside uploaded media folder
+Options -Indexes -ExecCGI
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|phps|pl|py|cgi|sh|bash)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

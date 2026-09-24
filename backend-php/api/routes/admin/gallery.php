@@ -24,9 +24,10 @@ if ($method === 'POST' && $adminPath === '/gallery') {
     $filename     = save_upload('image', 'gallery');
 
     $stmt = $db->prepare(
-        'INSERT INTO gallery_images (filename, original_name, tag, caption) VALUES (?, ?, ?, ?)'
+        'INSERT INTO gallery_images (filename, original_name, tag, caption, is_published) VALUES (?, ?, ?, ?, 1)'
     );
     $stmt->execute([$filename, $originalName, strtolower($tag), $caption]);
+
     $id = (int) $db->lastInsertId();
 
     json_success(['id' => $id, 'filename' => $filename, 'message' => 'Image uploaded successfully']);

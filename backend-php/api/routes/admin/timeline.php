@@ -19,20 +19,34 @@ if ($method === 'POST' && $adminPath === '/timeline') {
     $filename = save_upload('image', 'timeline');
 
     $stmt = $db->prepare(
-        'INSERT INTO timeline_events (text, location, image, add_to_gallery) VALUES (?, ?, ?, ?)'
+        'INSERT INTO timeline_events (text, location, image, add_to_gallery, is_published, is_deleted) VALUES (?, ?, ?, ?, 1, 0)'
     );
     $stmt->execute([$text, $location, $filename, (int) $add_to_gallery]);
+
     $eventId = (int) $db->lastInsertId();
 
     // Auto-add to gallery
     if ($add_to_gallery && $filename) {
         $caption = mb_substr($text, 0, 200);
         $db->prepare(
-            "INSERT INTO gallery_images (filename, tag, caption, source_timeline_id) VALUES (?, 'timeline', ?, ?)"
+            "INSERT INTO gallery_images (filename, tag, caption, source_timeline_id, is_published) VALUES (?, 'timeline', ?, ?, 1)"
         )->execute([$filename, $caption, $eventId]);
+
     }
 
-    json_success(['id' => $eventId, 'message' => 'Timeline event created successfully']);
+    $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+    $sentStats = null;
+    if ($notify && $eventId) {
+        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $postLink = rtrim($siteUrl, '/') . '/#/timeline';
+        $titleSnippet = 'Timeline: ' . mb_substr($text, 0, 60);
+        $sentStats = broadcast_email_to_subscribers($db, $titleSnippet, $text, $postLink, 'Timeline Event');
+    }
+
+    json_success([
+        'id' => $eventId,
+        'message' => 'Timeline event created successfully' . ($sentStats ? " ({$sentStats['sent']}/{$sentStats['total']} emails sent)" : '')
+    ]);
 }
 
 // DELETE /admin/timeline/{id}

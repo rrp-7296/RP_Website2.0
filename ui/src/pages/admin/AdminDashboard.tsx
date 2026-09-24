@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
   Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
-  Bell, Menu, X
+  Bell, Menu, X, Users, RefreshCw
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 
-type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications';
+type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
 
 interface Stats {
   total_blogs: number;
@@ -170,6 +170,13 @@ export default function AdminDashboard() {
                 {stats.unread_notifications > 0 && <span className="badge saffron-bg">{stats.unread_notifications}</span>}
               </button>
             </li>
+            <li>
+              <button onClick={() => handleTabClick('subscribers')} className={`dash-nav-btn ${activeTab === 'subscribers' ? 'active' : ''}`}>
+                <Users size={18} /> 
+                <span>Subscribers</span>
+                {stats.total_subscribers > 0 && <span className="badge green-bg">{stats.total_subscribers}</span>}
+              </button>
+            </li>
           </ul>
         </aside>
 
@@ -183,6 +190,7 @@ export default function AdminDashboard() {
           {activeTab === 'messages' && <MessagesInbox token={token} onUpdate={fetchStats} />}
           {activeTab === 'comments' && <CommentsApproval token={token} onUpdate={fetchStats} />}
           {activeTab === 'notifications' && <NotificationsPanel token={token} onUpdate={fetchStats} setActiveTab={setActiveTab} />}
+          {activeTab === 'subscribers' && <SubscribersManager token={token} onUpdate={fetchStats} />}
         </main>
       </div>
     </div>
@@ -251,6 +259,7 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -278,6 +287,7 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
     formData.append('title', title);
     formData.append('description', description);
     formData.append('main_body', body);
+    formData.append('notify_subscribers', String(notifySubscribers));
     if (imageFile) {
       formData.append('image', imageFile);
     }
@@ -350,6 +360,18 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
                 <label>Featured Image File</label>
                 <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <input
+                  type="checkbox"
+                  id="notifyBlogSubscribers"
+                  checked={notifySubscribers}
+                  onChange={(e) => setNotifySubscribers(e.target.checked)}
+                  style={{ accentColor: '#FF9933', cursor: 'pointer' }}
+                />
+                <label htmlFor="notifyBlogSubscribers" style={{ fontSize: '0.88rem', cursor: 'pointer', color: 'var(--text-primary)', margin: 0 }}>
+                  Send Email Notification & Link to Active Subscribers
+                </label>
+              </div>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowAddForm(false)} className="btn btn-outline">Cancel</button>
                 <button type="submit" disabled={submitting} className="btn btn-saffron">{submitting ? 'Creating...' : 'Publish Post'}</button>
@@ -402,6 +424,7 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
   const [location, setLocation] = useState('');
   const [addToGallery, setAddToGallery] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -429,6 +452,7 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
     formData.append('text', text);
     formData.append('location', location);
     formData.append('add_to_gallery', String(addToGallery));
+    formData.append('notify_subscribers', String(notifySubscribers));
     if (imageFile) {
       formData.append('image', imageFile);
     }
@@ -490,9 +514,13 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
               <label>Event Image File</label>
               <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
             </div>
+            <div className="form-group" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input type="checkbox" id="sync" checked={addToGallery} onChange={(e) => setAddToGallery(e.target.checked)} style={{ accentColor: '#FF9933' }} />
+              <label htmlFor="sync" style={{ cursor: 'pointer', margin: 0 }}>Automatically add image to Gallery</label>
+            </div>
             <div className="form-group" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" id="sync" checked={addToGallery} onChange={(e) => setAddToGallery(e.target.checked)} />
-              <label htmlFor="sync" style={{ cursor: 'pointer' }}>Automatically add image to Gallery</label>
+              <input type="checkbox" id="notifyTimeline" checked={notifySubscribers} onChange={(e) => setNotifySubscribers(e.target.checked)} style={{ accentColor: '#FF9933' }} />
+              <label htmlFor="notifyTimeline" style={{ cursor: 'pointer', margin: 0 }}>Send Email Notification & Link to Active Subscribers</label>
             </div>
             <button type="submit" disabled={submitting} className="btn btn-saffron" style={{ width: '100%' }}>
               {submitting ? 'Saving Event...' : 'Add Event & Publish'}
@@ -532,6 +560,7 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -559,6 +588,7 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
     formData.append('title', title);
     formData.append('text', text);
     formData.append('url', url);
+    formData.append('notify_subscribers', String(notifySubscribers));
     if (imageFile) {
       formData.append('image', imageFile);
     }
@@ -620,9 +650,13 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
               <label>External Link (optional)</label>
               <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className="form-input" />
             </div>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
               <label>News Banner Image</label>
               <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
+            </div>
+            <div className="form-group" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input type="checkbox" id="notifyNews" checked={notifySubscribers} onChange={(e) => setNotifySubscribers(e.target.checked)} style={{ accentColor: '#FF9933' }} />
+              <label htmlFor="notifyNews" style={{ cursor: 'pointer', margin: 0 }}>Send Email Notification & Link to Active Subscribers</label>
             </div>
             <button type="submit" disabled={submitting} className="btn btn-saffron" style={{ width: '100%' }}>
               {submitting ? 'Saving...' : 'Add News Article'}
@@ -859,47 +893,52 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
         {messages.length === 0 ? (
           <div className="glass-card text-center" style={{ padding: '40px' }}>No messages in inbox.</div>
         ) : (
-          messages.map((m) => (
-            <div key={m.id} className="message-item glass-card" style={{ padding: '24px', borderLeft: m.is_replied ? '4px solid #10b981' : (m.is_read ? '1px solid var(--border-color)' : '4px solid var(--saffron)') }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0' }}>{m.subject}</h4>
-                    {m.is_replied ? (
-                      <span className="badge green-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Replied</span>
-                    ) : (
-                      <span className="badge saffron-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Pending Reply</span>
+          messages.map((m) => {
+            const isReplied = m.is_replied === true || m.is_replied === 1 || m.is_replied === '1';
+            const isRead = m.is_read === true || m.is_read === 1 || m.is_read === '1';
+
+            return (
+              <div key={m.id} className="message-item glass-card" style={{ padding: '24px', borderLeft: isReplied ? '4px solid #10b981' : (isRead ? '1px solid var(--border-color)' : '4px solid var(--saffron)') }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0' }}>{m.subject}</h4>
+                      {isReplied ? (
+                        <span className="badge green-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Replied</span>
+                      ) : (
+                        <span className="badge saffron-bg" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>Pending Reply</span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>From: <strong>{m.name}</strong> ({m.email})</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.created_at ? new Date(m.created_at).toLocaleString() : ''}</span>
+                    {!isRead && (
+                      <button onClick={() => handleMarkRead(m.id)} className="btn btn-outline btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                        <Check size={12} /> Mark Read
+                      </button>
+                    )}
+                    {!isReplied && (
+                      <button onClick={() => { setActiveReplyMessage(m); setReplyText(''); }} className="btn btn-saffron btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                        Reply via Email
+                      </button>
                     )}
                   </div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>From: <strong>{m.name}</strong> ({m.email})</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(m.created_at).toLocaleString()}</span>
-                  {!m.is_read && (
-                    <button onClick={() => handleMarkRead(m.id)} className="btn btn-outline btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                      <Check size={12} /> Mark Read
-                    </button>
-                  )}
-                  {!m.is_replied && (
-                    <button onClick={() => { setActiveReplyMessage(m); setReplyText(''); }} className="btn btn-saffron btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                      Reply via Email
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', background: 'var(--saffron-pale)', border: '1px dashed var(--border-saffron)', padding: '14px 18px', borderRadius: '12px', margin: '0' }}>{m.message}</p>
-              
-              {m.is_replied && m.reply_message && (
-                <div style={{ marginTop: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '14px 18px', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.8rem', color: '#10b981', fontWeight: '600' }}>
-                    <span>Admin Reply History</span>
-                    <span>Sent: {new Date(m.replied_at).toLocaleString()}</span>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', background: 'var(--saffron-pale)', border: '1px dashed var(--border-saffron)', padding: '14px 18px', borderRadius: '12px', margin: '0' }}>{m.message}</p>
+                
+                {isReplied && m.reply_message && (
+                  <div style={{ marginTop: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '14px 18px', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.8rem', color: '#10b981', fontWeight: '600' }}>
+                      <span>Admin Reply History</span>
+                      <span>Sent: {m.replied_at ? new Date(m.replied_at).toLocaleString() : ''}</span>
+                    </div>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0', whiteSpace: 'pre-wrap' }}>{m.reply_message}</p>
                   </div>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0', whiteSpace: 'pre-wrap' }}>{m.reply_message}</p>
-                </div>
-              )}
-            </div>
-          ))
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -1202,6 +1241,110 @@ function NotificationsPanel({
             </div>
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── SUBSCRIBERS / RECIPIENTS MANAGER ────────────────────────────────
+function SubscribersManager({ token, onUpdate }: { token: string | null, onUpdate: () => void }) {
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubscribers();
+  }, []);
+
+  const fetchSubscribers = async () => {
+    try {
+      const res = await fetch(apiUrl('/admin/subscribers'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubscribers(Array.isArray(data) ? data : (data.items || data.data || []));
+      }
+    } catch (e) {
+      setSubscribers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'unsubscribed' ? 'active' : 'unsubscribed';
+    try {
+      const res = await fetch(apiUrl(`/admin/subscribers/${id}/status`), {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        fetchSubscribers();
+        onUpdate();
+      }
+    } catch (err) {
+      alert('Failed to update subscriber status');
+    }
+  };
+
+  return (
+    <div className="subscribers-manager animate-fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 4px 0' }}>Manage Subscribers & Recipients</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+            Manage subscriber email/SMS broadcast lists. Statuses can be toggled without deleting recipient records.
+          </p>
+        </div>
+      </div>
+
+      <div className="dash-table-wrapper glass-card">
+        <table className="dash-table">
+          <thead>
+            <tr>
+              <th>Subscriber Name</th>
+              <th>Email Address</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Date Subscribed</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading subscribers...</td></tr>
+            ) : subscribers.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No subscribers found.</td></tr>
+            ) : (
+              subscribers.map((sub) => (
+                <tr key={sub.id}>
+                  <td><strong>{sub.name || 'Anonymous'}</strong></td>
+                  <td>{sub.email || '—'}</td>
+                  <td>{sub.phone || '—'}</td>
+                  <td>
+                    <span className={`badge ${sub.status === 'unsubscribed' ? 'red-bg' : 'green-bg'}`}>
+                      {sub.status === 'unsubscribed' ? 'Unsubscribed' : 'Active'}
+                    </span>
+                  </td>
+                  <td>{new Date(sub.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      onClick={() => toggleStatus(sub.id, sub.status)}
+                      className="btn btn-outline btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                    >
+                      {sub.status === 'unsubscribed' ? 'Mark Active' : 'Unsubscribe'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

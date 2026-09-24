@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Shield } from 'lucide-react';
+import { Menu, X, Shield, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { useVisitor } from '../context/VisitorContext';
 
 // Ashoka Chakra SVG (24 spokes)
 function AshokaSVG({ size = 24, className = '' }) {
@@ -28,6 +29,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { visitor, openModal } = useVisitor();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -94,6 +96,31 @@ export default function Navbar() {
             ))}
             <Link to="/gallery">Gallery</Link>
             <ThemeToggle style={{ marginLeft: '8px' }} />
+
+            {/* Visitor Identity Chip */}
+            <button
+              onClick={openModal}
+              title={visitor ? `Visitor Profile: ${visitor.name}` : 'Visitor Login'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '16px',
+                fontSize: '0.82rem',
+                fontWeight: '600',
+                backgroundColor: visitor ? 'rgba(255, 153, 51, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                color: visitor ? '#FF9933' : 'var(--text-secondary)',
+                border: visitor ? '1px solid rgba(255, 153, 51, 0.3)' : '1px solid rgba(255, 255, 255, 0.12)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginLeft: '4px'
+              }}
+            >
+              <User size={14} />
+              <span>{visitor ? `Hi, ${visitor.name.split(' ')[0]}` : 'Visitor'}</span>
+            </button>
+
             <Link to="/admin" className="admin-link-icon" title="Admin Panel" aria-label="Admin Panel">
               <Shield size={16} />
             </Link>
@@ -122,6 +149,28 @@ export default function Navbar() {
             </a>
           ))}
           <Link to="/gallery" onClick={() => setIsOpen(false)}>Gallery</Link>
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              openModal();
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              color: visitor ? '#FF9933' : 'var(--text-primary)',
+              fontSize: '1rem',
+              fontWeight: '500',
+              padding: '12px 0',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left'
+            }}
+          >
+            <User size={16} /> {visitor ? `Profile (${visitor.name})` : 'Visitor Login'}
+          </button>
           <Link
             to="/admin"
             onClick={() => setIsOpen(false)}

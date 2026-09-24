@@ -110,10 +110,22 @@ CREATE TABLE IF NOT EXISTS timeline_events (
     location        VARCHAR(500) DEFAULT '',
     image           VARCHAR(500) NULL,
     date            DATETIME DEFAULT CURRENT_TIMESTAMP,
+    likes_count     INT DEFAULT 0,
     add_to_gallery  TINYINT(1) DEFAULT 1,
     is_published    TINYINT(1) DEFAULT 1,
     is_deleted      TINYINT(1) DEFAULT 0,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
+run_sql($pdo, 'Create timeline_likes table', "
+CREATE TABLE IF NOT EXISTS timeline_likes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    event_id   INT NOT NULL,
+    name       VARCHAR(200) DEFAULT 'Anonymous',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_event_id (event_id),
+    FOREIGN KEY (event_id) REFERENCES timeline_events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
@@ -125,11 +137,24 @@ CREATE TABLE IF NOT EXISTS news_items (
     url          VARCHAR(1000) DEFAULT '',
     image        VARCHAR(500) NULL,
     date         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    likes_count  INT DEFAULT 0,
     is_published TINYINT(1) DEFAULT 1,
     is_deleted   TINYINT(1) DEFAULT 0,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
+
+run_sql($pdo, 'Create news_likes table', "
+CREATE TABLE IF NOT EXISTS news_likes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    news_id    INT NOT NULL,
+    name       VARCHAR(200) DEFAULT 'Anonymous',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_news_id (news_id),
+    FOREIGN KEY (news_id) REFERENCES news_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 
 run_sql($pdo, 'Create gallery_images table', "
 CREATE TABLE IF NOT EXISTS gallery_images (
@@ -164,8 +189,22 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 run_sql($pdo, 'Create subscriptions table', "
 CREATE TABLE IF NOT EXISTS subscriptions (
     id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(200) NULL,
     email      VARCHAR(255) NOT NULL UNIQUE,
+    phone      VARCHAR(100) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
+run_sql($pdo, 'Create visitor_profiles table', "
+CREATE TABLE IF NOT EXISTS visitor_profiles (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(200) NOT NULL,
+    email         VARCHAR(255) NULL,
+    phone         VARCHAR(100) NULL,
+    is_subscribed TINYINT(1) DEFAULT 1,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 

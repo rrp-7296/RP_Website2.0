@@ -12,6 +12,7 @@ require_once __DIR__ . '/helpers/response.php';
 require_once __DIR__ . '/helpers/db.php';
 require_once __DIR__ . '/helpers/auth.php';
 require_once __DIR__ . '/helpers/upload.php';
+require_once __DIR__ . '/helpers/mail.php';
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
 set_cors_headers();
@@ -24,19 +25,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // ─── Parse URI ────────────────────────────────────────────────────────────
 $requestUri  = $_SERVER['REQUEST_URI'] ?? '/';
-$scriptName  = dirname($_SERVER['SCRIPT_NAME']);
+$rawPath     = strtok($requestUri, '?');
 
-// Strip script directory prefix (so it works in a subdirectory)
-if ($scriptName !== '/' && str_starts_with($requestUri, $scriptName)) {
-    $requestUri = substr($requestUri, strlen($scriptName));
+// If running in a subdirectory under index.php, strip script directory
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+if (str_contains($scriptName, 'index.php')) {
+    $scriptDir = str_replace('\\', '/', dirname($scriptName));
+    if ($scriptDir !== '/' && str_starts_with($rawPath, $scriptDir)) {
+        $rawPath = substr($rawPath, strlen($scriptDir));
+    }
 }
 
-// Remove query string and strip prefixes (/index.php or /api)
-$path = strtok($requestUri, '?');
-$path = preg_replace('#^/index\.php#', '', $path);
-$path = preg_replace('#^/api#', '', $path);
+// Strip optional prefixes (/index.php or /api)
+$path = preg_replace('#^/index\.php#', '', $rawPath);
+if (str_starts_with($path, '/api/')) {
+    $path = substr($path, 4);
+} elseif ($path === '/api') {
+    $path = '/';
+}
 $path = rtrim($path, '/') ?: '/';
 $method = strtoupper($_SERVER['REQUEST_METHOD']);
+
 
 
 
@@ -66,6 +75,27 @@ function match_route(string $pattern, string $path) {
 if ($method === 'GET' && $path === '/health') {
     json_success(['status' => 'healthy', 'version' => APP_VERSION]);
 }
+
+// ── Serve Uploaded Files ──────────────────────────────────────────────────
+if (str_starts_with($path, '/uploads/')) {
+    $fileRelative = substr($path, strlen('/uploads/'));
+    $filePath = UPLOAD_DIR . '/' . $fileRelative;
+
+    if (file_exists($filePath) && is_file($filePath)) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $filePath) ?: 'application/octet-stream';
+        finfo_close($finfo);
+
+        header('Access-Control-Allow-Origin: *');
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: public, max-age=86400');
+        readfile($filePath);
+        exit;
+    }
+    json_error('Upload file not found', 404);
+}
+
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 if (str_starts_with($path, '/auth')) {
@@ -97,8 +127,8 @@ if (str_starts_with($path, '/gallery')) {
     exit;
 }
 
-// ── Contact / Messages / Subscriptions (public) ───────────────────────────
-if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || $path === '/subscriptions') {
+// ── Contact / Messages / Subscriptions / Visitors (public) ────────────────
+if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || str_starts_with($path, '/subscriptions') || str_starts_with($path, '/unsubscribe') || str_starts_with($path, '/resubscribe') || $path === '/visitors') {
     require_once __DIR__ . '/routes/contact.php';
     exit;
 }
@@ -137,6 +167,10 @@ if (str_starts_with($path, '/admin')) {
     }
     if (str_starts_with($adminPath, '/notifications')) {
         require_once __DIR__ . '/routes/admin/notifications.php';
+        exit;
+    }
+    if (str_starts_with($adminPath, '/subscribers')) {
+        require_once __DIR__ . '/routes/admin/subscribers.php';
         exit;
     }
 }

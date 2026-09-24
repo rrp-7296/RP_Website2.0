@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle, Bell } from 'lucide-react';
 import { apiUrl } from '../config/api';
+import { useVisitor } from '../context/VisitorContext';
 
 export default function Newsletter() {
+  const { visitor, saveVisitor } = useVisitor();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+
+  // Auto-fill visitor email if already saved in profile
+  React.useEffect(() => {
+    if (visitor?.email && !email) {
+      setEmail(visitor.email);
+    }
+  }, [visitor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,13 +24,24 @@ export default function Newsletter() {
       const response = await fetch(apiUrl('/subscriptions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          name: visitor?.name || '',
+          phone: visitor?.phone || ''
+        }),
       });
       const data = await response.json();
       if (response.ok) {
         setStatus('success');
-        setEmail('');
         setMessage('Thank you for subscribing! We\'ll keep you updated.');
+        // Update visitor profile in context & localStorage
+        saveVisitor({
+          name: visitor?.name || email.split('@')[0],
+          email: email,
+          phone: visitor?.phone,
+          is_subscribed: true
+        });
+        setEmail('');
       } else {
         setStatus('error');
         setMessage(data.detail || 'Failed to subscribe. Please try again.');

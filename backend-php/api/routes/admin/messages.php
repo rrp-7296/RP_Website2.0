@@ -18,16 +18,22 @@ if ($method === 'GET' && $adminPath === '/messages') {
 
     $result = paginate(
         $db,
-        'SELECT COUNT(*) FROM contact_messages WHERE is_deleted = 0',
+        'SELECT COUNT(*) FROM contact_messages WHERE (is_deleted = 0 OR is_deleted IS NULL)',
         'SELECT id, name, email, subject, message, is_read, is_replied, reply_message, replied_at, created_at
          FROM contact_messages
-         WHERE is_deleted = 0
+         WHERE (is_deleted = 0 OR is_deleted IS NULL)
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?',
         [],
         $page,
         $limit
     );
+
+    // Ensure boolean fields are strict booleans for JavaScript clients
+    foreach ($result['items'] as &$item) {
+        $item['is_read'] = ((int)($item['is_read'] ?? 0)) === 1;
+        $item['is_replied'] = ((int)($item['is_replied'] ?? 0)) === 1;
+    }
 
     json_success($result);
 }
@@ -70,20 +76,6 @@ if ($method === 'POST' && ($m = match_route('/admin/messages/{id}/reply', $admin
     )->execute([$replyMessage, $id]);
 
     json_message('Reply email sent successfully and recorded.');
-}
-
-/**
- * Send a reply email to the contact form sender.
- */
-function send_reply_email(string $toEmail, string $toName, string $originalSubject, string $replyBody): bool {
-    $to      = "$toName <$toEmail>";
-    $subject = 'Re: ' . ($originalSubject ?: 'Your message to ' . APP_NAME);
-    $body    = "Dear $toName,\n\n$replyBody\n\nBest regards,\n" . APP_NAME;
-    $headers = "From: " . APP_NAME . " <" . SMTP_USER . ">\r\n" .
-               "Reply-To: " . SMTP_USER . "\r\n" .
-               "X-Mailer: PHP/" . PHP_VERSION;
-
-    return @mail($to, $subject, $body, $headers);
 }
 
 json_error("Not found: [$method] $path", 404);

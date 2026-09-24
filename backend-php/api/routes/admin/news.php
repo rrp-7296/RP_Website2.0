@@ -18,12 +18,24 @@ if ($method === 'POST' && $adminPath === '/news') {
     $filename = save_upload('image', 'news');
 
     $stmt = $db->prepare(
-        'INSERT INTO news_items (title, text, url, image) VALUES (?, ?, ?, ?)'
+        'INSERT INTO news_items (title, text, url, image, is_published, is_deleted) VALUES (?, ?, ?, ?, 1, 0)'
     );
     $stmt->execute([$title, $text, $url, $filename]);
+
     $id = (int) $db->lastInsertId();
 
-    json_success(['id' => $id, 'message' => 'News item created successfully']);
+    $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+    $sentStats = null;
+    if ($notify && $id) {
+        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $postLink = rtrim($siteUrl, '/') . '/#/news';
+        $sentStats = broadcast_email_to_subscribers($db, $title, $text, $postLink, 'News Item');
+    }
+
+    json_success([
+        'id' => $id,
+        'message' => 'News item created successfully' . ($sentStats ? " ({$sentStats['sent']}/{$sentStats['total']} emails sent)" : '')
+    ]);
 }
 
 // DELETE /admin/news/{id}
