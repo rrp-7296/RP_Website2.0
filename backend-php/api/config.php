@@ -51,7 +51,7 @@ define('CONTACT_NOTIFY_EMAIL', 'rakeshwarpandey@gmail.com');
 // ─── App ───────────────────────────────────────────────────────────────────
 define('APP_NAME', 'Rakeshwar Pandey Portfolio');
 define('APP_VERSION', '2.0.0');
-define('DEBUG', false); // Set to false in production
+define('DEBUG', true); // Set to true for initial deployment troubleshooting
 
 // ─── PHP 8 Compatibility Polyfills ───────────────────────────────────────
 if (!function_exists('str_starts_with')) {
