@@ -1,16 +1,11 @@
 <?php
 /**
- * routes/contact.php — Public contact and subscription endpoints.
- *
- * POST /messages      — submit contact form
- * POST /contact       — alias for /messages
- * POST /subscriptions — subscribe with JSON body {"email": "..."}
- * POST /subscribe     — subscribe with query param ?email=...
+ * routes/contact.php — Public endpoints for contact form, visitor profile tracking, and subscriptions.
  */
 
 $db = get_db();
 
-// POST /messages or /contact
+// POST /messages (Contact Form Submission)
 if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
     $body    = get_body();
     $name    = require_field($body, 'name');
@@ -18,7 +13,6 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
     $subject = optional_field($body, 'subject', '');
     $message = require_field($body, 'message');
 
-    // Basic email validation
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_error('Invalid email address', 422);
     }
@@ -34,7 +28,7 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
         "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('message', NULL, ?, ?)"
     )->execute([$msgId, "New contact message from: {$name} ({$email})"]);
 
-    // Best-effort notification email (don't fail if email fails)
+    // Best-effort notification email to site owner
     @send_notification_email($name, $email, $subject, $message);
 
     json_message('Thank you! Your message has been submitted successfully.');
@@ -73,6 +67,9 @@ if ($method === 'POST' && $path === '/visitors') {
         } elseif ($isSubscribed) {
             $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
                ->execute([$name ?: null, $email, $phone ?: null]);
+            
+            // Dispatch welcome email to new subscriber!
+            send_subscriber_welcome_email($email, $name);
         }
     }
 
@@ -119,24 +116,10 @@ if ($method === 'POST' && ($path === '/unsubscribe' || $path === '/subscriptions
         "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('unsubscribe', NULL, NULL, ?)"
     )->execute(["Subscriber unsubscribed: {$email}"]);
 
-    json_message('You have been unsubscribed from email updates.');
+    json_message('You have been unsubscribed successfully.');
 }
 
-// POST /resubscribe
-if ($method === 'POST' && ($path === '/resubscribe' || $path === '/subscriptions/resubscribe')) {
-    $body  = get_body();
-    $email = $_GET['email'] ?? optional_field($body, 'email', '');
-    if (!$email) json_error('Email address is required', 422);
-
-    $stmt = $db->prepare("UPDATE subscriptions SET status = 'active' WHERE email = ?");
-    $stmt->execute([$email]);
-
-    $db->prepare("UPDATE visitor_profiles SET is_subscribed = 1 WHERE email = ?")->execute([$email]);
-
-    json_message('You have been resubscribed to email updates!');
-}
-
-// POST /subscriptions
+// POST /subscriptions (JSON body style)
 if ($method === 'POST' && $path === '/subscriptions') {
     $body  = get_body();
     $email = require_field($body, 'email');
@@ -159,30 +142,40 @@ function handle_subscription(PDO $db, string $email, string $name = '', string $
         json_error('Invalid email address', 422);
     }
 
-    $stmt = $db->prepare('SELECT id FROM subscriptions WHERE email = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, status FROM subscriptions WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
-    if ($stmt->fetch()) {
-        json_message('You are already subscribed!');
+    $existing = $stmt->fetch();
+
+    if ($existing) {
+        if (($existing['status'] ?? 'active') === 'unsubscribed') {
+            $db->prepare("UPDATE subscriptions SET status = 'active', name = COALESCE(?, name) WHERE id = ?")
+               ->execute([$name ?: null, $existing['id']]);
+            send_subscriber_welcome_email($email, $name);
+            json_message('Welcome back! You have resubscribed successfully.');
+        } else {
+            json_message('You are already subscribed!');
+        }
+    } else {
+        $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
+           ->execute([$name ?: null, $email, $phone ?: null]);
+        
+        // Add notification
+        $db->prepare(
+            "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)"
+        )->execute(["New newsletter subscriber: " . ($name ? "{$name} ({$email})" : $email)]);
+
+        // Send HTML Welcome Email to new subscriber
+        send_subscriber_welcome_email($email, $name);
+
+        json_message('You are subscribed! Thank you.');
     }
-
-    $db->prepare('INSERT INTO subscriptions (name, email, phone) VALUES (?, ?, ?)')->execute([$name ?: null, $email, $phone ?: null]);
-    
-    // Add notification
-    $db->prepare(
-        "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)"
-    )->execute(["New newsletter subscriber: " . ($name ? "{$name} ({$email})" : $email)]);
-
-    // Send HTML Welcome Email to new subscriber
-    @send_subscriber_welcome_email($email, $name);
-
-    json_message('You are subscribed! Thank you.');
 }
 
 /**
  * Send notification email to admin using HTML email helper.
  */
 function send_notification_email(string $name, string $email, string $subject, string $message): void {
-    @send_admin_contact_notification($name, $email, $subject, $message);
+    send_admin_contact_notification($name, $email, $subject, $message);
 }
 
 json_error("Not found: [$method] $path", 404);
