@@ -1,11 +1,105 @@
 <?php
 /**
- * helpers/mail.php — Centralized email dispatch, HTML email templates, and subscriber broadcasting.
+ * helpers/mail.php — Centralized email dispatch (SMTP + Native Mail), HTML templates, and subscriber broadcasting.
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+
+/**
+ * Robust SMTP Socket + Native Mail Fallback Dispatcher
+ */
+function send_html_email(string $toEmail, string $toName, string $subject, string $htmlBody): bool {
+    $host = defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com';
+    $port = defined('SMTP_PORT') ? (int)SMTP_PORT : 587;
+    $username = defined('SMTP_USER') ? SMTP_USER : '';
+    $password = defined('SMTP_PASS') ? SMTP_PASS : '';
+    $fromEmail = (!empty($username) && filter_var($username, FILTER_VALIDATE_EMAIL)) 
+        ? $username 
+        : ('noreply@' . ($_SERVER['HTTP_HOST'] ?? 'rakeshwarpandey.com'));
+    $replyTo = (defined('CONTACT_NOTIFY_EMAIL') && filter_var(CONTACT_NOTIFY_EMAIL, FILTER_VALIDATE_EMAIL)) 
+        ? CONTACT_NOTIFY_EMAIL 
+        : $fromEmail;
+
+    // If SMTP credentials are not set or left as defaults, fallback to PHP mail()
+    if (empty($password) || str_contains($password, 'your-app-password') || str_contains($username, 'your-email@')) {
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: Rakeshwar Pandey <{$fromEmail}>\r\n";
+        $headers .= "Reply-To: {$replyTo}\r\n";
+        $headers .= "X-Mailer: PHP/" . PHP_VERSION;
+        return @mail($toEmail, $subject, $htmlBody, $headers);
+    }
+
+    // Perform direct SMTP Socket Connection
+    try {
+        $prefix = ($port === 465) ? 'ssl://' : '';
+        $socket = @fsockopen($prefix . $host, $port, $errno, $errstr, 12);
+        if (!$socket) {
+            // Fallback to PHP mail() if socket connection refused
+            $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
+            return @mail($toEmail, $subject, $htmlBody, $headers);
+        }
+
+        $read = function() use ($socket) { return fgets($socket, 512); };
+        $write = function($cmd) use ($socket) { fputs($socket, $cmd . "\r\n"); };
+
+        $read();
+        $write("EHLO " . gethostname());
+        $read();
+
+        if ($port === 587) {
+            $write("STARTTLS");
+            $startTlsResp = $read();
+            if (str_starts_with($startTlsResp, '220')) {
+                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                $write("EHLO " . gethostname());
+                $read();
+            }
+        }
+
+        $write("AUTH LOGIN");
+        $read();
+        $write(base64_encode($username));
+        $read();
+        $write(base64_encode($password));
+        $authResp = $read();
+
+        if (!str_starts_with($authResp, '235')) {
+            fclose($socket);
+            // Fallback to mail() if auth fails
+            $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
+            return @mail($toEmail, $subject, $htmlBody, $headers);
+        }
+
+        $write("MAIL FROM: <{$fromEmail}>");
+        $read();
+        $write("RCPT TO: <{$toEmail}>");
+        $read();
+        $write("DATA");
+        $read();
+
+        $message  = "MIME-Version: 1.0\r\n";
+        $message .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $message .= "From: Rakeshwar Pandey <{$fromEmail}>\r\n";
+        $message .= "Reply-To: {$replyTo}\r\n";
+        $message .= "To: {$toName} <{$toEmail}>\r\n";
+        $message .= "Subject: {$subject}\r\n\r\n";
+        $message .= $htmlBody . "\r\n.";
+
+        $write($message);
+        $sendResp = $read();
+
+        $write("QUIT");
+        fclose($socket);
+
+        return str_starts_with($sendResp, '250');
+    } catch (Exception $e) {
+        $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
+        return @mail($toEmail, $subject, $htmlBody, $headers);
+    }
+}
 
 /**
  * Send an HTML reply email to a visitor who submitted a contact form.
@@ -15,9 +109,6 @@ function send_reply_email(string $toEmail, string $toName, string $originalSubje
     $subjectEsc = htmlspecialchars($originalSubject ?: 'Your message to ' . APP_NAME, ENT_QUOTES, 'UTF-8');
     $replyHtml  = nl2br(htmlspecialchars($replyBody, ENT_QUOTES, 'UTF-8'));
     $subject    = 'Re: ' . ($originalSubject ?: 'Your message to ' . APP_NAME);
-
-    $fromEmail  = (defined('SMTP_USER') && filter_var(SMTP_USER, FILTER_VALIDATE_EMAIL)) ? SMTP_USER : ('noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-    $replyTo    = (defined('CONTACT_NOTIFY_EMAIL') && filter_var(CONTACT_NOTIFY_EMAIL, FILTER_VALIDATE_EMAIL)) ? CONTACT_NOTIFY_EMAIL : $fromEmail;
 
     $htmlBody = "
     <!DOCTYPE html>
@@ -71,28 +162,13 @@ function send_reply_email(string $toEmail, string $toName, string $originalSubje
     </html>
     ";
 
-    $toFormatted = "$toNameEsc <$toEmail>";
-    $headers  = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: Rakeshwar Pandey <{$fromEmail}>\r\n";
-    $headers .= "Reply-To: {$replyTo}\r\n";
-    $headers .= "X-Mailer: PHP/" . PHP_VERSION;
-
-    return @mail($toEmail, $subject, $htmlBody, $headers);
+    return send_html_email($toEmail, $toName, $subject, $htmlBody);
 }
 
 /**
  * Broadcast an HTML update email to all active subscribers.
- *
- * @param PDO    $db       Database connection
- * @param string $title    Title of the blog, news, or timeline post
- * @param string $summary  Brief description/summary
- * @param string $link     Direct URL link to view the post
- * @param string $postType 'Blog Post', 'News Article', 'Timeline Event'
- * @return array{sent: int, total: int}
  */
 function broadcast_email_to_subscribers(PDO $db, string $title, string $summary, string $link, string $postType = 'Update'): array {
-    // Fetch active subscribers who have a valid email address
     $stmt = $db->query("SELECT id, name, email FROM subscriptions WHERE (status = 'active' OR status IS NULL) AND email IS NOT NULL AND email != ''");
     $subscribers = $stmt->fetchAll();
 
@@ -102,10 +178,7 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
 
     $sentCount = 0;
     $total = count($subscribers);
-    $siteUrl = defined('APP_URL') ? APP_URL : (isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : 'http://localhost:5173');
-
-    $fromEmail = (defined('SMTP_USER') && filter_var(SMTP_USER, FILTER_VALIDATE_EMAIL)) ? SMTP_USER : ('noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-    $replyTo   = (defined('CONTACT_NOTIFY_EMAIL') && filter_var(CONTACT_NOTIFY_EMAIL, FILTER_VALIDATE_EMAIL)) ? CONTACT_NOTIFY_EMAIL : $fromEmail;
+    $siteUrl = defined('APP_URL') ? APP_URL : (isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : 'https://rakeshwarpandey.com');
 
     $titleEsc   = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $summaryEsc = nl2br(htmlspecialchars(mb_substr(strip_tags($summary), 0, 320), ENT_QUOTES, 'UTF-8')) . '...';
@@ -171,19 +244,11 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
         </html>
         ";
 
-        $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: Rakeshwar Pandey <{$fromEmail}>\r\n";
-        $headers .= "Reply-To: {$replyTo}\r\n";
-        $headers .= "List-Unsubscribe: <{$unsubUrl}>\r\n";
-        $headers .= "X-Mailer: PHP/" . PHP_VERSION;
-
-        if (@mail($toEmail, $subject, $htmlBody, $headers)) {
+        if (send_html_email($toEmail, $toName, $subject, $htmlBody)) {
             $sentCount++;
         }
     }
 
-    // Record notification for admin dashboard
     $db->prepare(
         "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('broadcast', NULL, NULL, ?)"
     )->execute(["Broadcast sent for '{$title}': {$sentCount}/{$total} emails delivered."]);
