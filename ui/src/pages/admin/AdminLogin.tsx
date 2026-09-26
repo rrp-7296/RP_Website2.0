@@ -22,16 +22,21 @@ export default function AdminLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (e) {
+        // Response was not JSON
+      }
 
       if (response.ok) {
         localStorage.setItem('admin_token', data.access_token);
         navigate('/admin/dashboard');
       } else {
-        setError(data.detail || 'Invalid credentials. Please try again.');
+        setError(data.error || data.detail || 'Invalid username or password. Please try again.');
       }
     } catch (err) {
-      setError('Connection refused. Is the FastAPI backend running?');
+      setError('Unable to connect to backend API. Please verify server status.');
     } finally {
       setLoading(false);
     }
