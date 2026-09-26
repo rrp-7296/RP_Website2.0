@@ -1,10 +1,9 @@
 <?php
 declare(strict_types=1);
 /**
- * setup.php — One-time database schema installer + admin seeder.
+ * setup.php — Universal Database Schema Installer + Admin Seeder (SQLite & MySQL compatible).
  */
 
-// Enable error display for setup diagnostics
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 
@@ -21,7 +20,9 @@ if (file_exists(__DIR__ . '/config.php')) {
 
 header('Content-Type: text/html; charset=utf-8');
 
-if (defined('DB_DRIVER') && DB_DRIVER === 'sqlite') {
+$isSQLite = (defined('DB_DRIVER') && DB_DRIVER === 'sqlite');
+
+if ($isSQLite) {
     $dbPath = DB_SQLITE_PATH;
     $dsn = 'sqlite:' . $dbPath;
     try {
@@ -60,24 +61,27 @@ function run_sql(PDO $pdo, string $description, string $sql): void {
     }
 }
 
+// Dialect helpers for SQL compatibility across SQLite & MySQL
+$pkAuto = $isSQLite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY';
+$engine = $isSQLite ? '' : 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+
 // ─── Create Tables ────────────────────────────────────────────────────────
 
 run_sql($pdo, 'Create admin_users table', "
 CREATE TABLE IF NOT EXISTS admin_users (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    username     VARCHAR(100) NOT NULL UNIQUE,
+    id            {$pkAuto},
+    username      VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    display_name VARCHAR(200) DEFAULT 'Admin',
-    email        VARCHAR(255) NULL,
-    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    display_name  VARCHAR(200) DEFAULT 'Admin',
+    email         VARCHAR(255) NULL,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create blog_posts table', "
 CREATE TABLE IF NOT EXISTS blog_posts (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
+    id           {$pkAuto},
     title        VARCHAR(500) NOT NULL,
     description  TEXT NULL,
     main_body    TEXT NOT NULL,
@@ -88,36 +92,34 @@ CREATE TABLE IF NOT EXISTS blog_posts (
     is_published TINYINT(1) DEFAULT 1,
     is_deleted   TINYINT(1) DEFAULT 0,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create blog_comments table', "
 CREATE TABLE IF NOT EXISTS blog_comments (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
+    id          {$pkAuto},
     post_id     INT NOT NULL,
     name        VARCHAR(200) NOT NULL,
     email       VARCHAR(255) NULL,
     comment     TEXT NOT NULL,
     is_approved TINYINT(1) DEFAULT 0,
-    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_post_id (post_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create blog_likes table', "
 CREATE TABLE IF NOT EXISTS blog_likes (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         {$pkAuto},
     post_id    INT NOT NULL,
     name       VARCHAR(200) DEFAULT 'Anonymous',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_post_id (post_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create timeline_events table', "
 CREATE TABLE IF NOT EXISTS timeline_events (
-    id              INT AUTO_INCREMENT PRIMARY KEY,
+    id              {$pkAuto},
     text            TEXT NOT NULL,
     location        VARCHAR(500) DEFAULT '',
     image           VARCHAR(500) NULL,
@@ -127,22 +129,21 @@ CREATE TABLE IF NOT EXISTS timeline_events (
     is_published    TINYINT(1) DEFAULT 1,
     is_deleted      TINYINT(1) DEFAULT 0,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) {$engine};
 ");
 
 run_sql($pdo, 'Create timeline_likes table', "
 CREATE TABLE IF NOT EXISTS timeline_likes (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         {$pkAuto},
     event_id   INT NOT NULL,
     name       VARCHAR(200) DEFAULT 'Anonymous',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_event_id (event_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create news_items table', "
 CREATE TABLE IF NOT EXISTS news_items (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
+    id           {$pkAuto},
     title        VARCHAR(500) NOT NULL,
     text         TEXT NOT NULL,
     url          VARCHAR(1000) DEFAULT '',
@@ -152,36 +153,34 @@ CREATE TABLE IF NOT EXISTS news_items (
     is_published TINYINT(1) DEFAULT 1,
     is_deleted   TINYINT(1) DEFAULT 0,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) {$engine};
 ");
 
 run_sql($pdo, 'Create news_likes table', "
 CREATE TABLE IF NOT EXISTS news_likes (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         {$pkAuto},
     news_id    INT NOT NULL,
     name       VARCHAR(200) DEFAULT 'Anonymous',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_news_id (news_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create gallery_images table', "
 CREATE TABLE IF NOT EXISTS gallery_images (
-    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    id                 {$pkAuto},
     filename           VARCHAR(500) NOT NULL,
     original_name      VARCHAR(500) NULL,
-    tag                ENUM('international','intuc','union','press','timeline','others') DEFAULT 'others',
+    tag                VARCHAR(100) DEFAULT 'others',
     caption            VARCHAR(1000) NULL,
     source_timeline_id INT NULL,
     is_published       TINYINT(1) DEFAULT 1,
-    uploaded_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_tag (tag)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    uploaded_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create contact_messages table', "
 CREATE TABLE IF NOT EXISTS contact_messages (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
+    id            {$pkAuto},
     name          VARCHAR(200) NOT NULL,
     email         VARCHAR(255) NOT NULL,
     subject       VARCHAR(500) DEFAULT '',
@@ -192,42 +191,42 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     replied_at    DATETIME NULL,
     is_deleted    TINYINT(1) DEFAULT 0,
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) {$engine};
 ");
 
 run_sql($pdo, 'Create subscriptions table', "
 CREATE TABLE IF NOT EXISTS subscriptions (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(200) NULL,
-    email        VARCHAR(255) NOT NULL UNIQUE,
-    phone        VARCHAR(100) NULL,
-    status       VARCHAR(50) DEFAULT 'active',
+    id            {$pkAuto},
+    name          VARCHAR(200) NULL,
+    email         VARCHAR(255) NOT NULL UNIQUE,
+    phone         VARCHAR(100) NULL,
+    status        VARCHAR(50) DEFAULT 'active',
     subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) {$engine};
 ");
 
 run_sql($pdo, 'Create visitor_profiles table', "
 CREATE TABLE IF NOT EXISTS visitor_profiles (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
+    id            {$pkAuto},
     name          VARCHAR(200) NOT NULL,
     email         VARCHAR(255) NULL,
     phone         VARCHAR(100) NULL,
     is_subscribed TINYINT(1) DEFAULT 1,
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+) {$engine};
 ");
 
 run_sql($pdo, 'Create notifications table', "
 CREATE TABLE IF NOT EXISTS notifications (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         {$pkAuto},
     type       VARCHAR(50) NOT NULL,
     post_id    INT NULL,
     item_id    INT NULL,
     message    TEXT NOT NULL,
     is_read    TINYINT(1) DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) {$engine};
 ");
 
 // ─── Seed Admin User ──────────────────────────────────────────────────────
@@ -255,19 +254,30 @@ if ((int) $stmt->fetchColumn() === 0) {
   h1 { color: #FF9933; margin-top: 0; }
   .result { padding: 10px 14px; margin: 6px 0; border-radius: 6px; background: #1e293b; font-size: 14px; }
   .warn { background: #7f1d1d; color: #fca5a5; padding: 16px; margin-top: 24px; border-radius: 8px; font-weight: bold; line-height: 1.5; }
+  .info-box { background: #0284c7; color: #ffffff; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
 </style>
 </head>
 <body>
 <h1>🚀 Setup — <?= htmlspecialchars(defined('APP_NAME') ? APP_NAME : 'Portfolio') ?></h1>
-<p>Database: <strong><?= htmlspecialchars(DB_NAME) ?></strong> (Host: <strong><?= htmlspecialchars(DB_HOST) ?></strong>)</p>
+
+<div class="info-box">
+  Active Driver: <strong><?= strtoupper(DB_DRIVER) ?></strong>
+  <?php if ($isSQLite): ?>
+    (SQLite database file: <code><?= htmlspecialchars(DB_SQLITE_PATH) ?></code>)
+  <?php else: ?>
+    (MySQL Database: <code><?= htmlspecialchars(DB_NAME) ?></code> on <code><?= htmlspecialchars(DB_HOST) ?></code>)
+  <?php endif; ?>
+</div>
+
 <hr style="border-color: #334155; margin: 16px 0;">
 <?php foreach ($results as $r): ?>
   <div class="result"><?= $r ?></div>
 <?php endforeach; ?>
 <hr style="border-color: #334155; margin: 16px 0;">
+
 <div class="warn">
   ⚠️ SECURITY WARNING: DELETE THIS FILE (<code>setup.php</code>) FROM YOUR SERVER NOW!<br>
-  Anyone who visits this URL can re-run the table creation setup.
+  Anyone who visits this URL can re-run the setup.
 </div>
 <p style="color:#94a3b8; font-size: 14px;">Default admin credentials: <code>admin</code> / <code>adminpassword</code></p>
 </body>
