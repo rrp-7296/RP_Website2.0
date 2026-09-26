@@ -5,6 +5,11 @@
  */
 
 declare(strict_types=1);
+
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers/mail.php';
 
@@ -31,7 +36,7 @@ if ($toEmail && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
                          '</div>';
     } else {
         $resultMessage = '<div style="background:#7f1d1d; color:#fca5a5; padding:16px; border-radius:8px; margin-bottom:20px;">' .
-                         '❌ Failed to send email. Check your SMTP settings in <code>api/config.php</code> or web server error logs.' .
+                         '❌ Failed to send email via SMTP/Mail. Check your SMTP credentials in <code>api/config.php</code>.' .
                          '</div>';
     }
 }

@@ -8,6 +8,20 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
 
 /**
+ * Polyfill helper check
+ */
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool {
+        return $needle === '' || strpos($haystack, $needle) === 0;
+    }
+}
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+
+/**
  * Robust SMTP Socket + Native Mail Fallback Dispatcher
  */
 function send_html_email(string $toEmail, string $toName, string $subject, string $htmlBody): bool {
@@ -32,10 +46,18 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
         return @mail($toEmail, $subject, $htmlBody, $headers);
     }
 
-    // Perform direct SMTP Socket Connection
+    // Perform direct SMTP Socket Connection inside a bulletproof Throwable try-catch block
     try {
         $prefix = ($port === 465) ? 'ssl://' : '';
-        $socket = @fsockopen($prefix . $host, $port, $errno, $errstr, 12);
+        $context = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ]);
+        
+        $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 12, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
             // Fallback to PHP mail() if socket connection refused
             $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
@@ -52,8 +74,12 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
         if ($port === 587) {
             $write("STARTTLS");
             $startTlsResp = $read();
-            if (str_starts_with($startTlsResp, '220')) {
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            if (str_starts_with((string)$startTlsResp, '220')) {
+                $cryptoMethod = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) {
+                    $cryptoMethod = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+                }
+                @stream_socket_enable_crypto($socket, true, $cryptoMethod);
                 $write("EHLO " . gethostname());
                 $read();
             }
@@ -66,7 +92,7 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
         $write(base64_encode($password));
         $authResp = $read();
 
-        if (!str_starts_with($authResp, '235')) {
+        if (!str_starts_with((string)$authResp, '235')) {
             fclose($socket);
             // Fallback to mail() if auth fails
             $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
@@ -94,8 +120,9 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
         $write("QUIT");
         fclose($socket);
 
-        return str_starts_with($sendResp, '250');
-    } catch (Exception $e) {
+        return str_starts_with((string)$sendResp, '250');
+    } catch (Throwable $e) {
+        // Safe fallback to PHP native mail()
         $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
         return @mail($toEmail, $subject, $htmlBody, $headers);
     }
