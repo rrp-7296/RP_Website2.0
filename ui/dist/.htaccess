@@ -2,8 +2,11 @@
   RewriteEngine On
   RewriteBase /
 
-  # Do not rewrite requests starting with /api
-  RewriteRule ^api/ - [L]
+  # Automatically route /api requests to api/index.php if not a real file/folder
+  RewriteCond %{REQUEST_URI} ^/api/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
   # If requested file or directory exists, serve directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
