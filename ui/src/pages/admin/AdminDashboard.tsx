@@ -1,5 +1,6 @@
 import { apiUrl, uploadUrl } from '../../config/api';
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
@@ -339,9 +340,9 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
         </button>
       </div>
 
-      {showAddForm && (
+      {showAddForm && ReactDOM.createPortal(
         <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
-          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
             <h3 style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '20px' }}>Create Blog Post</h3>
             <form onSubmit={handleSubmit} className="dash-form">
               <div className="form-group" style={{ marginBottom: '16px' }}>
@@ -378,7 +379,8 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Blogs List Table */}
@@ -942,7 +944,7 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
         )}
       </div>
 
-      {activeReplyMessage && (
+      {activeReplyMessage && ReactDOM.createPortal(
         <div className="modal-overlay" onClick={() => setActiveReplyMessage(null)}>
           <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
             <h3 style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '16px' }}>Reply to Message</h3>
@@ -978,7 +980,8 @@ function MessagesInbox({ token, onUpdate }: { token: string | null, onUpdate: ()
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
