@@ -6,13 +6,35 @@
 
 declare(strict_types=1);
 
-// ─── Bootstrap ────────────────────────────────────────────────────────────
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/helpers/response.php';
-require_once __DIR__ . '/helpers/db.php';
-require_once __DIR__ . '/helpers/auth.php';
-require_once __DIR__ . '/helpers/upload.php';
-require_once __DIR__ . '/helpers/mail.php';
+// ─── Bootstrap & Smart Path Detection ──────────────────────────────────────
+$baseDir = __DIR__;
+
+// Locate config.php
+if (file_exists($baseDir . '/config.php')) {
+    require_once $baseDir . '/config.php';
+} elseif (file_exists($baseDir . '/../config.php')) {
+    require_once $baseDir . '/../config.php';
+} else {
+    http_response_code(500);
+    die('<h2>❌ Configuration Error</h2><p>Could not locate <code>config.php</code>. Please make sure <code>config.php</code> is placed inside your <code>public_html/api/</code> folder.</p>');
+}
+
+// Locate helpers directory
+$helpersDir = file_exists($baseDir . '/helpers') ? ($baseDir . '/helpers') : (file_exists($baseDir . '/../helpers') ? ($baseDir . '/../helpers') : null);
+
+if (!$helpersDir) {
+    http_response_code(500);
+    die('<h2>❌ Folder Structure Error: Missing <code>helpers</code> folder</h2>' .
+        '<p>The <code>helpers</code> folder was not found inside <code>public_html/api/</code>.</p>' .
+        '<p><strong>Correct Folder Structure on cPanel:</strong></p>' .
+        '<pre>public_html/\n  └── api/\n        ├── index.php\n        ├── config.php\n        ├── helpers/   <-- (auth.php, db.php, mail.php, response.php, upload.php)\n        └── routes/    <-- (auth.php, blogs.php, news.php, admin/...)</pre>');
+}
+
+require_once $helpersDir . '/response.php';
+require_once $helpersDir . '/db.php';
+require_once $helpersDir . '/auth.php';
+require_once $helpersDir . '/upload.php';
+require_once $helpersDir . '/mail.php';
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
 set_cors_headers();
@@ -47,8 +69,6 @@ $path = rtrim($path, '/') ?: '/';
 $method = strtoupper($_SERVER['REQUEST_METHOD']);
 
 
-
-
 // ─── Route Matching Helper ────────────────────────────────────────────────
 $routeParams = [];
 
@@ -57,16 +77,21 @@ $routeParams = [];
  * @return array<string,string>|false
  */
 function match_route(string $pattern, string $path) {
-    // Convert :param and {param} style placeholders to named capture groups
     $regex = preg_replace('/\{(\w+)\}/', '(?P<$1>[^/]+)', $pattern);
     $regex = preg_replace('/:(\w+)/', '(?P<$1>[^/]+)', $regex);
     $regex = '#^' . $regex . '$#';
 
     if (preg_match($regex, $path, $matches)) {
-        // Return only string-named matches
         return array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
     }
     return false;
+}
+
+// Locate routes directory
+$routesDir = file_exists($baseDir . '/routes') ? ($baseDir . '/routes') : (file_exists($baseDir . '/../routes') ? ($baseDir . '/../routes') : null);
+
+if (!$routesDir) {
+    json_error('Server Error: Missing routes directory. Please ensure public_html/api/routes/ exists.', 500);
 }
 
 // ─── Routing Table ────────────────────────────────────────────────────────
@@ -96,40 +121,39 @@ if (str_starts_with($path, '/uploads/')) {
     json_error('Upload file not found', 404);
 }
 
-
 // ── Auth ──────────────────────────────────────────────────────────────────
 if (str_starts_with($path, '/auth')) {
-    require_once __DIR__ . '/routes/auth.php';
+    require_once $routesDir . '/auth.php';
     exit;
 }
 
 // ── Blogs (public) ────────────────────────────────────────────────────────
 if (str_starts_with($path, '/blogs')) {
-    require_once __DIR__ . '/routes/blogs.php';
+    require_once $routesDir . '/blogs.php';
     exit;
 }
 
 // ── Timeline (public) ─────────────────────────────────────────────────────
 if (str_starts_with($path, '/timeline')) {
-    require_once __DIR__ . '/routes/timeline.php';
+    require_once $routesDir . '/timeline.php';
     exit;
 }
 
 // ── News (public) ─────────────────────────────────────────────────────────
 if (str_starts_with($path, '/news')) {
-    require_once __DIR__ . '/routes/news.php';
+    require_once $routesDir . '/news.php';
     exit;
 }
 
 // ── Gallery (public) ──────────────────────────────────────────────────────
 if (str_starts_with($path, '/gallery')) {
-    require_once __DIR__ . '/routes/gallery.php';
+    require_once $routesDir . '/gallery.php';
     exit;
 }
 
 // ── Contact / Messages / Subscriptions / Visitors (public) ────────────────
 if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || str_starts_with($path, '/subscriptions') || str_starts_with($path, '/unsubscribe') || str_starts_with($path, '/resubscribe') || $path === '/visitors') {
-    require_once __DIR__ . '/routes/contact.php';
+    require_once $routesDir . '/contact.php';
     exit;
 }
 
@@ -138,39 +162,39 @@ if (str_starts_with($path, '/admin')) {
     $adminPath = substr($path, strlen('/admin'));
 
     if ($adminPath === '/stats' && $method === 'GET') {
-        require_once __DIR__ . '/routes/admin/stats.php';
+        require_once $routesDir . '/admin/stats.php';
         exit;
     }
     if (str_starts_with($adminPath, '/blogs')) {
-        require_once __DIR__ . '/routes/admin/blogs.php';
+        require_once $routesDir . '/admin/blogs.php';
         exit;
     }
     if (str_starts_with($adminPath, '/timeline')) {
-        require_once __DIR__ . '/routes/admin/timeline.php';
+        require_once $routesDir . '/admin/timeline.php';
         exit;
     }
     if (str_starts_with($adminPath, '/news')) {
-        require_once __DIR__ . '/routes/admin/news.php';
+        require_once $routesDir . '/admin/news.php';
         exit;
     }
     if (str_starts_with($adminPath, '/gallery')) {
-        require_once __DIR__ . '/routes/admin/gallery.php';
+        require_once $routesDir . '/admin/gallery.php';
         exit;
     }
     if (str_starts_with($adminPath, '/messages')) {
-        require_once __DIR__ . '/routes/admin/messages.php';
+        require_once $routesDir . '/admin/messages.php';
         exit;
     }
     if (str_starts_with($adminPath, '/comments')) {
-        require_once __DIR__ . '/routes/admin/comments.php';
+        require_once $routesDir . '/admin/comments.php';
         exit;
     }
     if (str_starts_with($adminPath, '/notifications')) {
-        require_once __DIR__ . '/routes/admin/notifications.php';
+        require_once $routesDir . '/admin/notifications.php';
         exit;
     }
     if (str_starts_with($adminPath, '/subscribers')) {
-        require_once __DIR__ . '/routes/admin/subscribers.php';
+        require_once $routesDir . '/admin/subscribers.php';
         exit;
     }
 }
