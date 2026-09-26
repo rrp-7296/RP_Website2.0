@@ -28,7 +28,7 @@ if ($method === 'POST' && $adminPath === '/blogs') {
     $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     $sentStats = null;
     if ($notify && $id) {
-        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $siteUrl = defined('APP_URL') ? APP_URL : 'https://rakeshwarpandey.com';
         $postLink = rtrim($siteUrl, '/') . '/#/blog/' . $id;
         $sentStats = broadcast_email_to_subscribers($db, $title, $description ?: $main_body, $postLink, 'Blog Post');
     }

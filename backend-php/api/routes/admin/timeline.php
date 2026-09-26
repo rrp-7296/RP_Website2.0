@@ -37,7 +37,7 @@ if ($method === 'POST' && $adminPath === '/timeline') {
     $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     $sentStats = null;
     if ($notify && $eventId) {
-        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $siteUrl = defined('APP_URL') ? APP_URL : 'https://rakeshwarpandey.com';
         $postLink = rtrim($siteUrl, '/') . '/#/timeline';
         $titleSnippet = 'Timeline: ' . mb_substr($text, 0, 60);
         $sentStats = broadcast_email_to_subscribers($db, $titleSnippet, $text, $postLink, 'Timeline Event');

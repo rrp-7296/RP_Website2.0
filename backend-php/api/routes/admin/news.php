@@ -27,7 +27,7 @@ if ($method === 'POST' && $adminPath === '/news') {
     $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     $sentStats = null;
     if ($notify && $id) {
-        $siteUrl = defined('APP_URL') ? APP_URL : 'http://localhost:5173';
+        $siteUrl = defined('APP_URL') ? APP_URL : 'https://rakeshwarpandey.com';
         $postLink = rtrim($siteUrl, '/') . '/#/news';
         $sentStats = broadcast_email_to_subscribers($db, $title, $text, $postLink, 'News Item');
     }
