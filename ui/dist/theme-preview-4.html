@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme 4 — Blue-Saffron Gradient</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; overflow: hidden; width: 1280px; height: 720px; position: relative; }
+
+  /* Animated diagonal gradient BG */
+  .bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0047AB 0%, #1565C0 25%, #7B3FF2 50%, #C2410C 75%, #FF6B00 100%); background-size: 300% 300%; animation: gradient-pan 6s ease-in-out infinite alternate; }
+  @keyframes gradient-pan { 0%{background-position:0% 0%} 100%{background-position:100% 100%} }
+
+  /* Noise texture overlay for depth */
+  .noise { position: absolute; inset: 0; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  /* Glowing orbs */
+  .orb { position: absolute; border-radius: 50%; filter: blur(70px); }
+  .orb1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,212,255,0.3), transparent); top: -150px; left: -100px; animation: drift 9s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,107,0,0.4), transparent); bottom: -100px; right: -100px; animation: drift 7s ease-in-out infinite reverse; }
+  .orb3 { width: 250px; height: 250px; background: radial-gradient(circle, rgba(255,255,255,0.15), transparent); top: 50%; left: 50%; transform: translate(-50%,-50%); animation: drift 5s ease-in-out infinite; }
+  @keyframes drift { 0%,100%{transform:translate(0,0)} 33%{transform:translate(30px,-20px)} 66%{transform:translate(-20px,30px)} }
+
+  /* Wave rings */
+  .wave-ring { position: absolute; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); animation: ring-expand 4s ease-out infinite; }
+  .wr1 { width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: 0s; }
+  .wr2 { width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -1.33s; }
+  .wr3 { width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -2.66s; }
+  @keyframes ring-expand { 0%{width:200px;height:200px;opacity:0.4} 100%{width:800px;height:800px;opacity:0} }
+
+  /* Floating dots */
+  .dot { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); animation: float 5s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-20px);opacity:1} }
+  .d1{width:6px;height:6px;left:8%;top:25%;animation-delay:0s}
+  .d2{width:4px;height:4px;left:20%;top:65%;animation-delay:-1s}
+  .d3{width:5px;height:5px;left:35%;top:15%;animation-delay:-2s}
+  .d4{width:3px;height:3px;left:60%;top:80%;animation-delay:-3s}
+  .d5{width:6px;height:6px;left:78%;top:20%;animation-delay:-1.5s}
+  .d6{width:4px;height:4px;left:92%;top:55%;animation-delay:-2.5s}
+  .d7{width:5px;height:5px;left:48%;top:90%;animation-delay:-0.5s}
+  .d8{width:3px;height:3px;background:rgba(0,212,255,0.8);left:15%;top:45%;animation-delay:-4s}
+  .d9{width:4px;height:4px;background:rgba(0,212,255,0.6);left:70%;top:35%;animation-delay:-3.5s}
+
+  /* Curved wave SVG at bottom */
+  .wave-svg { position: absolute; bottom: 0; left: 0; right: 0; }
+
+  /* Nav */
+  nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 24px 60px; }
+  .logo { font-size: 1.3rem; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+  .logo span { color: #00D4FF; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+  .nav-links a.active { color: #fff; font-weight: 700; }
+  .nav-links a.active::after { content:''; display:block; height:2px; background:#00D4FF; border-radius:2px; margin-top:2px; }
+  .nav-cta { background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 10px 24px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; }
+
+  /* Hero */
+  .hero { position: relative; z-index: 5; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 40px 60px 0; gap: 40px; height: calc(720px - 80px); }
+
+  /* Cyan pill badge */
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.4); border-radius: 50px; padding: 7px 18px; margin-bottom: 20px; animation: cyan-pulse 2s ease-in-out infinite; }
+  @keyframes cyan-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.3)} 50%{box-shadow:0 0 0 8px rgba(0,212,255,0)} }
+  .pill span { color: #00D4FF; font-size: 0.78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .pulse-dot { width:8px;height:8px;background:#00D4FF;border-radius:50%;animation:blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 { font-size: 4.2rem; font-weight: 900; line-height: 1.05; margin-bottom: 16px; color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+  h1 .cyan { color: #00D4FF; }
+  .subtitle { color: rgba(255,255,255,0.75); font-size: 1rem; line-height: 1.7; margin-bottom: 36px; max-width: 450px; }
+
+  .cta-group { display: flex; gap: 16px; }
+  .btn-white { background: #fff; color: #0047AB; padding: 14px 32px; border-radius: 50px; font-weight: 800; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 4px 30px rgba(255,255,255,0.3); animation: white-glow 2s ease-in-out infinite; }
+  @keyframes white-glow { 0%,100%{box-shadow:0 4px 20px rgba(255,255,255,0.2)} 50%{box-shadow:0 4px 40px rgba(255,255,255,0.5)} }
+  .btn-glass { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: #fff; padding: 14px 32px; border-radius: 50px; font-weight: 700; font-size: 0.95rem; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; }
+
+  .stats { display: flex; gap: 40px; margin-top: 44px; }
+  .stat-num { font-size: 2rem; font-weight: 900; color: #fff; }
+  .stat-divider { width: 1px; background: rgba(255,255,255,0.2); height: 44px; }
+  .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Right portrait */
+  .portrait-area { display: flex; justify-content: center; align-items: center; position: relative; }
+  .portrait-glow { width: 360px; height: 360px; border-radius: 50%; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 5rem; position: relative; box-shadow: 0 0 80px rgba(0,212,255,0.2), 0 0 40px rgba(255,107,0,0.2); animation: portrait-pulse 3s ease-in-out infinite; }
+  @keyframes portrait-pulse { 0%,100%{box-shadow:0 0 60px rgba(0,212,255,0.2),0 0 30px rgba(255,107,0,0.2)} 50%{box-shadow:0 0 100px rgba(0,212,255,0.4),0 0 60px rgba(255,107,0,0.3)} }
+  .ring-cyan { position:absolute; inset:-16px; border-radius:50%; border:1px solid rgba(0,212,255,0.3); animation: ring-spin 8s linear infinite; }
+  .ring-orange { position:absolute; inset:-30px; border-radius:50%; border:1px dashed rgba(255,107,0,0.2); animation: ring-spin 12s linear infinite reverse; }
+  @keyframes ring-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .ring-cyan::after { content:''; position:absolute; top:-4px; left:50%; width:8px; height:8px; background:#00D4FF; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 10px #00D4FF; }
+  .ring-orange::after { content:''; position:absolute; top:-4px; right:30%; width:8px; height:8px; background:#FF6B00; border-radius:50%; box-shadow:0 0 10px #FF6B00; }
+
+  /* Floating glass cards */
+  .glass-card-float { position:absolute; background:rgba(255,255,255,0.12); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.25); border-radius:14px; padding:12px 18px; animation:card-float 4s ease-in-out infinite; }
+  .gcf1 { top:30px; right:-30px; animation-delay:0s; }
+  .gcf2 { bottom:60px; left:-40px; animation-delay:-2s; }
+  @keyframes card-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  .gc-label { font-size:0.65rem; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; }
+  .gc-val { font-size:1rem; font-weight:700; color:#fff; }
+
+  .theme-label { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 50px; padding: 8px 24px; color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 2px; z-index: 20; }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="noise"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="wave-ring wr1"></div>
+  <div class="wave-ring wr2"></div>
+  <div class="wave-ring wr3"></div>
+  <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div>
+  <div class="dot d4"></div><div class="dot d5"></div><div class="dot d6"></div>
+  <div class="dot d7"></div><div class="dot d8"></div><div class="dot d9"></div>
+
+  <nav>
+    <div class="logo">RP <span>Portfolio</span></div>
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#">Timeline</a>
+      <a href="#">Blog</a>
+      <a href="#">Gallery</a>
+      <a href="#">Contact</a>
+    </div>
+    <button class="nav-cta">Connect →</button>
+  </nav>
+
+  <div class="hero">
+    <div class="left">
+      <div class="pill"><div class="pulse-dot"></div><span>President · INTUC Jharkhand</span></div>
+      <h1>Rakeshwar<br><span class="cyan">Pandey</span></h1>
+      <p class="subtitle">Social leader and trade union champion. Dedicated to workers' rights, fair wages, and social justice across Jharkhand for 35+ years.</p>
+      <div class="cta-group">
+        <button class="btn-white">View Timeline →</button>
+        <button class="btn-glass">Read Blogs</button>
+      </div>
+      <div class="stats">
+        <div><div class="stat-num">35+</div><div class="stat-label">Years Service</div></div>
+        <div class="stat-divider"></div>
+        <div><div class="stat-num">12</div><div class="stat-label">Unions Led</div></div>
+        <div class="stat-divider"></div>
+        <div><div class="stat-num">50K+</div><div class="stat-label">Workers Helped</div></div>
+      </div>
+    </div>
+    <div class="portrait-area">
+      <div class="ring-orange"></div>
+      <div class="ring-cyan"></div>
+      <div class="portrait-glow">🏛️</div>
+      <div class="glass-card-float gcf1">
+        <div class="gc-label">Achievement</div>
+        <div class="gc-val">Wage Revised ✅</div>
+      </div>
+      <div class="glass-card-float gcf2">
+        <div class="gc-label">Active Since</div>
+        <div class="gc-val">1989</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme-label">OPTION 4 — BLUE-SAFFRON GRADIENT</div>
+</body>
+</html>

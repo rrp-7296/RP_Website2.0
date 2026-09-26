@@ -31,13 +31,14 @@ backend/uploads/*
 
 # Python egg / dist
 *.egg-info/
-dist/
+# dist/
+!ui/dist/
 build/
 *.egg
 
 # ─── Node / Frontend ─────────────────────────────────────────────────────────
 ui/node_modules/
-ui/dist/
+# ui/dist/  (tracked so cPanel Git deployment pulls production build)
 ui/dist-ssr/
 
 # Vite cache
