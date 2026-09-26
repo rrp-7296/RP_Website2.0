@@ -39,7 +39,7 @@ if ($method === 'GET' && $adminPath === '/messages') {
 }
 
 // PATCH /admin/messages/{id}/read
-if ($method === 'PATCH' && ($m = match_route('/admin/messages/{id}/read', $adminPath)) !== false) {
+if ($method === 'PATCH' && ($m = match_route('/admin/messages/{id}/read', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare('SELECT id FROM contact_messages WHERE id = ? LIMIT 1');
@@ -51,7 +51,7 @@ if ($method === 'PATCH' && ($m = match_route('/admin/messages/{id}/read', $admin
 }
 
 // POST /admin/messages/{id}/reply
-if ($method === 'POST' && ($m = match_route('/admin/messages/{id}/reply', $adminPath)) !== false) {
+if ($method === 'POST' && ($m = match_route('/admin/messages/{id}/reply', $path)) !== false) {
     $id   = (int) $m['id'];
     $body = get_body();
     $replyMessage = require_field($body, 'reply_message');
