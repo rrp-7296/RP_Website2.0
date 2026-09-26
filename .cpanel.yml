@@ -2,6 +2,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home2/rakes20a/public_html
-    - /bin/cp -R ui/dist/* $DEPLOYPATH/
+    - /bin/cp -R ui/dist/. $DEPLOYPATH/
     - /bin/cp -R backend-php/api $DEPLOYPATH/
     - /bin/cp -R backend-php/uploads $DEPLOYPATH/
