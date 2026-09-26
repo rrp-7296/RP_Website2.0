@@ -2,6 +2,9 @@
   RewriteEngine On
   RewriteBase /
 
+  # Social Media Open Graph Share Cards
+  RewriteRule ^share/([a-z]+)/([0-9]+)$ api/share.php?type=$1&id=$2 [QSA,L]
+
   # Automatically route /api requests to api/index.php if not a real file/folder
   RewriteCond %{REQUEST_URI} ^/api/
   RewriteCond %{REQUEST_FILENAME} !-f

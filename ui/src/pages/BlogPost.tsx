@@ -275,7 +275,7 @@ export default function BlogPost() {
             >
               <ThumbsUp size={18} /> {liked ? 'Liked!' : 'Like this post'} ({likesCount})
             </button>
-            <ShareButtons title={post.title} />
+            <ShareButtons title={post.title} url={`https://rakeshwarpandey.com/share/blog/${post.id}`} />
           </div>
 
         </article>
