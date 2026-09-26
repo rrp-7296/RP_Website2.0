@@ -1,6 +1,6 @@
 <?php
 /**
- * routes/auth.php — POST /auth/login, GET /auth/me
+ * routes/auth.php — POST /auth/login, GET /auth/me, POST /auth/change-password
  */
 
 $db = get_db();
@@ -39,6 +39,9 @@ if ($method === 'GET' && $path === '/auth/me') {
     if (!$user) {
         json_error('User not found', 404);
     }
+
+    json_success($user);
+}
 
 // POST /auth/change-password
 if ($method === 'POST' && $path === '/auth/change-password') {
