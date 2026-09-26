@@ -119,6 +119,38 @@ if ($method === 'POST' && ($path === '/unsubscribe' || $path === '/subscriptions
     json_message('You have been unsubscribed successfully.');
 }
 
+// POST /resubscribe
+if ($method === 'POST' && ($path === '/resubscribe' || $path === '/subscriptions/resubscribe')) {
+    $body  = get_body();
+    $email = $_GET['email'] ?? optional_field($body, 'email', '');
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_error('Valid email address is required', 422);
+    }
+
+    $stmt = $db->prepare('SELECT id, name FROM subscriptions WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    $sub = $stmt->fetch();
+
+    if ($sub) {
+        $db->prepare("UPDATE subscriptions SET status = 'active' WHERE id = ?")->execute([$sub['id']]);
+        $name = $sub['name'] ?? '';
+    } else {
+        $db->prepare("INSERT INTO subscriptions (email, status) VALUES (?, 'active')")->execute([$email]);
+        $name = '';
+    }
+
+    $db->prepare("UPDATE visitor_profiles SET is_subscribed = 1 WHERE email = ?")->execute([$email]);
+
+    $db->prepare(
+        "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)"
+    )->execute(["Subscriber resubscribed: {$email}"]);
+
+    // Send Welcome / Resubscribe confirmation email
+    send_subscriber_welcome_email($email, $name);
+
+    json_message('Welcome back! You have been resubscribed successfully.');
+}
+
 // POST /subscriptions (JSON body style)
 if ($method === 'POST' && $path === '/subscriptions') {
     $body  = get_body();
