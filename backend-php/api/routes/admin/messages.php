@@ -72,7 +72,7 @@ if ($method === 'POST' && ($m = match_route('/admin/messages/{id}/reply', $admin
 
     // Update DB
     $db->prepare(
-        'UPDATE contact_messages SET is_replied = 1, reply_message = ?, replied_at = NOW(), is_read = 1 WHERE id = ?'
+        'UPDATE contact_messages SET is_replied = 1, reply_message = ?, replied_at = CURRENT_TIMESTAMP, is_read = 1 WHERE id = ?'
     )->execute([$replyMessage, $id]);
 
     json_message('Reply email sent successfully and recorded.');

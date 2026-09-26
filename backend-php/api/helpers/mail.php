@@ -59,7 +59,6 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
         
         $socket = @stream_socket_client($prefix . $host . ':' . $port, $errno, $errstr, 12, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
-            // Fallback to PHP mail() if socket connection refused
             $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
             return @mail($toEmail, $subject, $htmlBody, $headers);
         }
@@ -94,7 +93,6 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
 
         if (!str_starts_with((string)$authResp, '235')) {
             fclose($socket);
-            // Fallback to mail() if auth fails
             $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
             return @mail($toEmail, $subject, $htmlBody, $headers);
         }
@@ -122,14 +120,79 @@ function send_html_email(string $toEmail, string $toName, string $subject, strin
 
         return str_starts_with((string)$sendResp, '250');
     } catch (Throwable $e) {
-        // Safe fallback to PHP native mail()
         $headers  = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Rakeshwar Pandey <{$fromEmail}>\r\nReply-To: {$replyTo}\r\n";
         return @mail($toEmail, $subject, $htmlBody, $headers);
     }
 }
 
 /**
- * Send an HTML reply email to a visitor who submitted a contact form.
+ * 1. Admin Notification Email: Sent to site owner when a new contact message is received.
+ */
+function send_admin_contact_notification(string $name, string $email, string $subject, string $message): bool {
+    $toEmail = CONTACT_NOTIFY_EMAIL;
+    $nameEsc = htmlspecialchars($name ?: 'Anonymous Visitor', ENT_QUOTES, 'UTF-8');
+    $emailEsc = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+    $subjectEsc = htmlspecialchars($subject ?: 'No Subject', ENT_QUOTES, 'UTF-8');
+    $msgHtml = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
+    $emailSubject = "📩 New Contact Form Message from {$nameEsc}: {$subjectEsc}";
+
+    $adminUrl = "https://rakeshwarpandey.com/#/admin";
+
+    $htmlBody = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+      <meta charset='utf-8'>
+      <title>{$emailSubject}</title>
+    </head>
+    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
+      <div style='max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>
+        
+        <!-- Header -->
+        <div style='background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 24px; text-align: center; border-bottom: 3px solid #FF9933;'>
+          <h2 style='margin: 0; font-size: 20px; font-weight: 800; color: #FF9933;'>NEW INCOMING MESSAGE</h2>
+          <p style='margin: 4px 0 0 0; font-size: 12px; color: #9ca3af; text-transform: uppercase;'>Rakeshwar Pandey Official Website</p>
+        </div>
+
+        <!-- Details Box -->
+        <div style='padding: 28px 24px;'>
+          <table style='width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;'>
+            <tr>
+              <td style='padding: 8px 0; color: #64748b; font-weight: 600; width: 100px;'>Sender Name:</td>
+              <td style='padding: 8px 0; color: #0f172a; font-weight: 700;'>{$nameEsc}</td>
+            </tr>
+            <tr>
+              <td style='padding: 8px 0; color: #64748b; font-weight: 600;'>Email:</td>
+              <td style='padding: 8px 0; color: #0284c7; font-weight: 700;'><a href='mailto:{$emailEsc}' style='color: #0284c7; text-decoration: none;'>{$emailEsc}</a></td>
+            </tr>
+            <tr>
+              <td style='padding: 8px 0; color: #64748b; font-weight: 600;'>Subject:</td>
+              <td style='padding: 8px 0; color: #0f172a; font-weight: 700;'>{$subjectEsc}</td>
+            </tr>
+          </table>
+
+          <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #FF9933; padding: 18px; border-radius: 8px; margin-bottom: 24px;'>
+            <p style='margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase;'>Message Content:</p>
+            <p style='margin: 0; font-size: 15px; color: #334155; line-height: 1.6;'>{$msgHtml}</p>
+          </div>
+
+          <div style='text-align: center; margin-top: 24px;'>
+            <a href='{$adminUrl}' style='background: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;'>
+              Reply via Admin Dashboard →
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </body>
+    </html>
+    ";
+
+    return send_html_email($toEmail, 'Rakeshwar Pandey', $emailSubject, $htmlBody);
+}
+
+/**
+ * 2. Visitor Reply Email: Sent to visitor when admin replies to their message.
  */
 function send_reply_email(string $toEmail, string $toName, string $originalSubject, string $replyBody): bool {
     $toNameEsc  = htmlspecialchars($toName ?: 'Valued Visitor', ENT_QUOTES, 'UTF-8');
@@ -142,16 +205,15 @@ function send_reply_email(string $toEmail, string $toName, string $originalSubje
     <html lang='en'>
     <head>
       <meta charset='utf-8'>
-      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
       <title>{$subjectEsc}</title>
     </head>
-    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
+    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
       <div style='max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>
         
         <!-- Header Banner -->
         <div style='background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 28px 24px; text-align: center; border-bottom: 3px solid #FF9933;'>
           <h2 style='margin: 0; font-size: 22px; font-weight: 800; color: #FF9933; letter-spacing: 0.5px;'>RAKESHWAR PANDEY</h2>
-          <p style='margin: 4px 0 0 0; font-size: 13px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;'>President — INTUC Jharkhand | Trade Union Leader</p>
+          <p style='margin: 4px 0 0 0; font-size: 13px; color: #9ca3af; text-transform: uppercase;'>President — INTUC Jharkhand | Trade Union Leader</p>
         </div>
 
         <!-- Content Body -->
@@ -168,7 +230,7 @@ function send_reply_email(string $toEmail, string $toName, string $originalSubje
           </div>
 
           <p style='font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 24px;'>
-            If you have any further questions or follow-ups, please feel free to reply directly to this message.
+            If you have any further questions, feel free to reply directly to this email.
           </p>
 
           <!-- Signature Block -->
@@ -193,7 +255,55 @@ function send_reply_email(string $toEmail, string $toName, string $originalSubje
 }
 
 /**
- * Broadcast an HTML update email to all active subscribers.
+ * 3. Subscriber Welcome Email: Sent to a new newsletter subscriber.
+ */
+function send_subscriber_welcome_email(string $toEmail, string $toName = ''): bool {
+    $toNameEsc = htmlspecialchars($toName ?: 'Subscriber', ENT_QUOTES, 'UTF-8');
+    $unsubUrl = 'https://rakeshwarpandey.com/#/unsubscribe?email=' . urlencode($toEmail);
+    $subject = "Welcome to the Official Network of Rakeshwar Pandey";
+
+    $htmlBody = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+      <meta charset='utf-8'>
+      <title>{$subject}</title>
+    </head>
+    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
+      <div style='max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>
+        
+        <div style='background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 28px 24px; text-align: center; border-bottom: 3px solid #FF9933;'>
+          <h2 style='margin: 0; font-size: 22px; font-weight: 800; color: #FF9933;'>RAKESHWAR PANDEY</h2>
+          <p style='margin: 4px 0 0 0; font-size: 13px; color: #9ca3af; text-transform: uppercase;'>President — INTUC Jharkhand</p>
+        </div>
+
+        <div style='padding: 32px 28px;'>
+          <h3 style='margin-top: 0; color: #0f172a; font-size: 18px;'>Welcome, {$toNameEsc}! 🎉</h3>
+          <p style='font-size: 15px; color: #475569; line-height: 1.6;'>
+            Thank you for joining our official updates list. You will now receive timely updates on trade union initiatives, key speeches, press releases, and community welfare programs.
+          </p>
+
+          <div style='text-align: center; margin: 28px 0;'>
+            <a href='https://rakeshwarpandey.com' style='background: linear-gradient(135deg, #FF9933 0%, #e65100 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 30px; font-weight: 700; font-size: 14px; display: inline-block;'>
+              Visit Official Website →
+            </a>
+          </div>
+        </div>
+
+        <div style='background: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;'>
+          <p style='margin: 0;'>Want to unsubscribe? <a href='{$unsubUrl}' style='color: #c2410c; text-decoration: underline;'>Click here to Unsubscribe</a></p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+    ";
+
+    return send_html_email($toEmail, $toName, $subject, $htmlBody);
+}
+
+/**
+ * 4. Subscriber Broadcast Update Email: Sent to all active subscribers on new content.
  */
 function broadcast_email_to_subscribers(PDO $db, string $title, string $summary, string $link, string $postType = 'Update'): array {
     $stmt = $db->query("SELECT id, name, email FROM subscriptions WHERE (status = 'active' OR status IS NULL) AND email IS NOT NULL AND email != ''");
@@ -205,7 +315,7 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
 
     $sentCount = 0;
     $total = count($subscribers);
-    $siteUrl = defined('APP_URL') ? APP_URL : (isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : 'https://rakeshwarpandey.com');
+    $siteUrl = 'https://rakeshwarpandey.com';
 
     $titleEsc   = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $summaryEsc = nl2br(htmlspecialchars(mb_substr(strip_tags($summary), 0, 320), ENT_QUOTES, 'UTF-8')) . '...';
@@ -225,21 +335,18 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
         <html lang='en'>
         <head>
           <meta charset='utf-8'>
-          <meta name='viewport' content='width=device-width, initial-scale=1.0'>
           <title>{$titleEsc}</title>
         </head>
-        <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
+        <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 30px 15px; color: #1e293b;'>
           <div style='max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);'>
             
-            <!-- Header Banner -->
             <div style='background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 28px 24px; text-align: center; border-bottom: 3px solid #FF9933;'>
-              <h2 style='margin: 0; font-size: 22px; font-weight: 800; color: #FF9933; letter-spacing: 0.5px;'>RAKESHWAR PANDEY</h2>
-              <p style='margin: 4px 0 0 0; font-size: 13px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;'>President — INTUC Jharkhand | Trade Union Leader</p>
+              <h2 style='margin: 0; font-size: 22px; font-weight: 800; color: #FF9933;'>RAKESHWAR PANDEY</h2>
+              <p style='margin: 4px 0 0 0; font-size: 13px; color: #9ca3af; text-transform: uppercase;'>President — INTUC Jharkhand</p>
             </div>
 
-            <!-- Content Body -->
             <div style='padding: 32px 28px;'>
-              <span style='display: inline-block; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; border: 1px solid #ffedd5;'>
+              <span style='display: inline-block; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; text-transform: uppercase; margin-bottom: 16px; border: 1px solid #ffedd5;'>
                 NEW {$postTypeEsc}
               </span>
 
@@ -252,15 +359,14 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
               </p>
 
               <div style='text-align: center; margin: 32px 0 24px 0;'>
-                <a href='{$linkEsc}' style='background: linear-gradient(135deg, #FF9933 0%, #e65100 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(255, 153, 51, 0.35);'>
+                <a href='{$linkEsc}' style='background: linear-gradient(135deg, #FF9933 0%, #e65100 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; display: inline-block;'>
                   Read Full {$postTypeEsc} →
                 </a>
               </div>
             </div>
 
-            <!-- Footer with Unsubscribe -->
-            <div style='background: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b; line-height: 1.6;'>
-              <p style='margin: 0 0 8px 0;'>You are receiving this update because you subscribed to notifications on the official website of Rakeshwar Pandey.</p>
+            <div style='background: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;'>
+              <p style='margin: 0 0 8px 0;'>You are receiving this update because you subscribed on the official website of Rakeshwar Pandey.</p>
               <p style='margin: 0;'>
                 Want to opt out? <a href='{$unsubUrlEsc}' style='color: #c2410c; text-decoration: underline; font-weight: 600;'>Click here to Unsubscribe</a>
               </p>

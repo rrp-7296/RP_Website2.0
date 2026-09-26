@@ -172,21 +172,17 @@ function handle_subscription(PDO $db, string $email, string $name = '', string $
         "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)"
     )->execute(["New newsletter subscriber: " . ($name ? "{$name} ({$email})" : $email)]);
 
+    // Send HTML Welcome Email to new subscriber
+    @send_subscriber_welcome_email($email, $name);
+
     json_message('You are subscribed! Thank you.');
 }
 
 /**
- * Send a simple notification email using PHP mail().
- * Uses native mail() — no SMTP library needed for most cPanel hosts.
+ * Send notification email to admin using HTML email helper.
  */
 function send_notification_email(string $name, string $email, string $subject, string $message): void {
-    $to      = CONTACT_NOTIFY_EMAIL;
-    $subj    = APP_NAME . ' — New Contact: ' . ($subject ?: 'No Subject');
-    $body    = "New message from: $name <$email>\nSubject: $subject\n\n$message";
-    $headers = "From: noreply@" . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n" .
-               "Reply-To: $email\r\n" .
-               "X-Mailer: PHP/" . PHP_VERSION;
-    @mail($to, $subj, $body, $headers);
+    @send_admin_contact_notification($name, $email, $subject, $message);
 }
 
 json_error("Not found: [$method] $path", 404);
