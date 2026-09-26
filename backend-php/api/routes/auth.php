@@ -8,10 +8,10 @@ $db = get_db();
 // POST /auth/login
 if ($method === 'POST' && $path === '/auth/login') {
     $body = get_body();
-    $username = require_field($body, 'username');
-    $password = require_field($body, 'password');
+    $username = trim((string)require_field($body, 'username'));
+    $password = (string)require_field($body, 'password');
 
-    $stmt = $db->prepare('SELECT id, username, display_name, email, password_hash FROM admin_users WHERE username = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, username, display_name, email, password_hash FROM admin_users WHERE LOWER(username) = LOWER(?) LIMIT 1');
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
