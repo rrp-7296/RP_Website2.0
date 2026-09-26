@@ -15,6 +15,7 @@ import NewsList from './pages/NewsList';
 import UnsubscribePage from './pages/UnsubscribePage';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import NotFound from './pages/NotFound';
 import { VisitorProvider } from './context/VisitorContext';
 import VisitorLoginModal from './components/VisitorLoginModal';
 import VisitorWelcomeToast from './components/VisitorWelcomeToast';
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="/unsubscribe" element={<UnsubscribePage />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       {!isAdminPath && <Footer />}

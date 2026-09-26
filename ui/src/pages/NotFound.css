@@ -1,0 +1,240 @@
+/* NotFound.css — Rich aesthetics for 404 Page */
+.not-found-page {
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+  color: #f8fafc;
+}
+
+/* Ambient glow animations */
+.not-found-ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.glow-1 {
+  width: 400px;
+  height: 400px;
+  background: #ff9933;
+  top: 10%;
+  left: 15%;
+  animation: floatGlow 10s infinite alternate ease-in-out;
+}
+
+.glow-2 {
+  width: 450px;
+  height: 450px;
+  background: #3b82f6;
+  bottom: 10%;
+  right: 15%;
+  animation: floatGlow 12s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatGlow {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -40px) scale(1.15); }
+}
+
+/* Glassmorphism main card */
+.not-found-card {
+  max-width: 760px;
+  width: 100%;
+  padding: 48px 36px;
+  border-radius: 24px;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+/* Badge */
+.not-found-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 30px;
+  background: rgba(255, 153, 51, 0.15);
+  border: 1px solid rgba(255, 153, 51, 0.3);
+  color: #ff9933;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.spin-slow-icon {
+  animation: spinSlow 20s linear infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Large 404 text */
+.not-found-title {
+  font-size: 6.5rem;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -2px;
+  color: #ffffff;
+}
+
+.gradient-number {
+  background: linear-gradient(135deg, #ff9933 0%, #f59e0b 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.not-found-subtitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 12px 0 16px;
+  color: #f1f5f9;
+}
+
+.not-found-description {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  max-width: 540px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+/* Primary buttons */
+.not-found-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.btn-primary-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff9933 0%, #e68a00 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  box-shadow: 0 10px 20px -5px rgba(255, 153, 51, 0.4);
+  transition: all 0.25s ease;
+}
+
+.btn-primary-home:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -5px rgba(255, 153, 51, 0.6);
+  background: linear-gradient(135deg, #ffaa44 0%, #ff9933 100%);
+}
+
+.btn-secondary-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  background: rgba(51, 65, 85, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-secondary-back:hover {
+  background: rgba(51, 65, 85, 0.9);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+/* Quick Directory Grid */
+.not-found-directory {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 28px;
+  text-align: left;
+}
+
+.directory-title {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.directory-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.directory-card:hover {
+  background: rgba(255, 153, 51, 0.1);
+  border-color: rgba(255, 153, 51, 0.3);
+  transform: translateY(-3px);
+}
+
+.dir-icon {
+  color: #ff9933;
+  flex-shrink: 0;
+}
+
+.dir-info h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.dir-info p {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 600px) {
+  .not-found-card {
+    padding: 32px 20px;
+  }
+  .not-found-title {
+    font-size: 4.5rem;
+  }
+  .not-found-subtitle {
+    font-size: 1.4rem;
+  }
+  .directory-grid {
+    grid-template-columns: 1fr;
+  }
+}
