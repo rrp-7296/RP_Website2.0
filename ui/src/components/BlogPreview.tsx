@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, Eye, ThumbsUp } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
+import ImageSlider from './ImageSlider';
 
 interface BlogPost {
   id: number;
   title: string;
   description: string;
   image?: string;
+  images?: string[];
   date: string;
   views: number;
   likes: number;
@@ -60,6 +62,7 @@ export default function BlogPreview() {
             title: item.title,
             description: item.description || '',
             image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : []),
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
             views: item.views || 0,
             likes: item.likes || 0
@@ -92,7 +95,7 @@ export default function BlogPreview() {
             {blogs.map((post) => (
               <div key={post.id} className="blog-card glass-card">
                 <div className="blog-card-img-wrapper">
-                  <img src={post.image || '/img/58.jpg'} alt={post.title} className="blog-card-img" />
+                  <ImageSlider images={post.images} image={post.image} altTitle={post.title} aspectRatio="16/9" />
                 </div>
                 <div className="blog-card-body">
                   <div className="blog-meta">
@@ -102,7 +105,11 @@ export default function BlogPreview() {
                       <span><ThumbsUp size={12} /> {post.likes}</span>
                     </div>
                   </div>
-                  <h3 className="blog-card-title">{post.title}</h3>
+                  <h3 className="blog-card-title">
+                    <Link to={`/blog/${post.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {post.title}
+                    </Link>
+                  </h3>
                   <p className="blog-card-excerpt">
                     {post.description.length > 120 ? `${post.description.substring(0, 120)}...` : post.description}
                   </p>

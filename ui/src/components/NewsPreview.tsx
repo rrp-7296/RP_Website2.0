@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, X, ExternalLink } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
+import ImageSlider from './ImageSlider';
+import ShareButtons from './ShareButtons';
 
 interface NewsItem {
   id: number;
   title: string;
   text: string;
   image?: string;
+  images?: string[];
   url?: string;
   date: string;
 }
@@ -78,6 +81,7 @@ export default function NewsPreview() {
             title: item.title,
             text: item.text,
             image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : []),
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
             url: item.url || undefined
           }));
@@ -107,9 +111,14 @@ export default function NewsPreview() {
         ) : (
           <div className="news-grid grid-3">
             {news.map((item) => (
-              <div key={item.id} className="news-card glass-card">
-                <div className="news-card-img-wrapper">
-                  <img src={item.image || '/img/edu/intuc.png'} alt={item.title} className="news-card-img" />
+              <div 
+                key={item.id} 
+                className="news-card glass-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedItem(item)}
+              >
+                <div className="news-card-img-wrapper" onClick={(e) => e.stopPropagation()}>
+                  <ImageSlider images={item.images} image={item.image} altTitle={item.title} aspectRatio="16/9" />
                 </div>
                 <div className="news-card-body">
                   <span className="news-date"><Calendar size={12} /> {item.date}</span>
@@ -134,23 +143,27 @@ export default function NewsPreview() {
       {/* News Modal Detail */}
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
-          <div className="modal-content glass-card animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass-card animate-fade-in" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
             <button className="modal-close" onClick={() => setSelectedItem(null)}>
               <X size={24} />
             </button>
             <div className="modal-body">
-              <img src={selectedItem.image || '/img/edu/intuc.png'} alt={selectedItem.title} className="modal-img" />
-              <div className="modal-meta">
+              <ImageSlider images={selectedItem.images} image={selectedItem.image} altTitle={selectedItem.title} aspectRatio="16/9" />
+              <div className="modal-meta" style={{ marginTop: '16px' }}>
                 <span><Calendar size={14} /> {selectedItem.date}</span>
               </div>
-              <h3 className="modal-title">{selectedItem.title}</h3>
-              <p className="modal-text">{selectedItem.text}</p>
+              <h3 className="modal-title" style={{ marginTop: '12px' }}>{selectedItem.title}</h3>
+              <p className="modal-text" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>{selectedItem.text}</p>
               
               {selectedItem.url && (
-                <a href={selectedItem.url} target="_blank" rel="noopener noreferrer" className="btn btn-saffron modal-link-btn" style={{ marginTop: '20px' }}>
+                <a href={selectedItem.url} target="_blank" rel="noopener noreferrer" className="btn btn-saffron modal-link-btn" style={{ marginTop: '20px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                   Read External Source <ExternalLink size={16} />
                 </a>
               )}
+
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <ShareButtons title={selectedItem.title} />
+              </div>
             </div>
           </div>
         </div>

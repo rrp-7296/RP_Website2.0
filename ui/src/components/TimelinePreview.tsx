@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, X } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
+import ImageSlider from './ImageSlider';
+import ShareButtons from './ShareButtons';
 
 interface TimelineEvent {
   id: number;
@@ -9,6 +11,7 @@ interface TimelineEvent {
   location: string;
   date: string;
   image?: string;
+  images?: string[];
 }
 
 const mockEvents: TimelineEvent[] = [
@@ -38,6 +41,7 @@ const mockEvents: TimelineEvent[] = [
 export default function TimelinePreview() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<TimelineEvent | null>(null);
 
   useEffect(() => {
     fetch(apiUrl('/timeline?page=1&limit=3'))
@@ -47,13 +51,13 @@ export default function TimelinePreview() {
       })
       .then(data => {
         if (data && data.items && data.items.length > 0) {
-          // Format date strings
           const formatted = data.items.map((item: any) => ({
             id: item.id,
             text: item.text,
             location: item.location || 'Jamshedpur',
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
-            image: item.image ? uploadUrl(item.image) : undefined
+            image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : [])
           }));
           setEvents(formatted);
         } else {
@@ -98,7 +102,12 @@ export default function TimelinePreview() {
             <div className="timeline-events-side">
               <div className="timeline-vertical-line"></div>
               {events.map((event, idx) => (
-                <div key={event.id} className="timeline-event-item glass-card animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div 
+                  key={event.id} 
+                  className="timeline-event-item glass-card animate-fade-in" 
+                  style={{ animationDelay: `${idx * 0.1}s`, cursor: 'pointer' }}
+                  onClick={() => setSelectedItem(event)}
+                >
                   <div className="timeline-event-marker"></div>
                   <div className="timeline-event-meta">
                     <span className="event-date"><Calendar size={14} /> {event.date}</span>
@@ -117,6 +126,31 @@ export default function TimelinePreview() {
           </Link>
         </div>
       </div>
+
+      {/* Timeline Detail Modal */}
+      {selectedItem && (
+        <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
+          <div className="modal-content glass-card animate-fade-in" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+            <button className="modal-close" onClick={() => setSelectedItem(null)}>
+              <X size={24} />
+            </button>
+            <div className="modal-body">
+              <ImageSlider images={selectedItem.images} image={selectedItem.image} altTitle={selectedItem.location} aspectRatio="16/9" />
+              <div className="modal-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                <span className="event-date"><Calendar size={14} /> {selectedItem.date}</span>
+                {selectedItem.location && <span className="event-location"><MapPin size={14} /> {selectedItem.location}</span>}
+              </div>
+              <p className="modal-text" style={{ fontSize: '1.05rem', lineHeight: '1.6', marginTop: '16px', color: 'var(--text-primary)' }}>
+                {selectedItem.text}
+              </p>
+
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <ShareButtons title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

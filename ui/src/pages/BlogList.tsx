@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Eye, ThumbsUp, ChevronLeft, ChevronRight, Home as HomeIcon } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
+import ImageSlider from '../components/ImageSlider';
 
 interface BlogPost {
   id: number;
   title: string;
   description: string;
   image?: string;
+  images?: string[];
   date: string;
   views: number;
   likes: number;
@@ -64,6 +66,7 @@ export default function BlogList() {
             title: item.title,
             description: item.description || '',
             image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : []),
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
             views: item.views || 0,
             likes: item.likes || 0

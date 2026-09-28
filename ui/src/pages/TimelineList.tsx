@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Home as HomeIcon, ThumbsUp, Heart } from 'lucide-react';
+import { Calendar, MapPin, Home as HomeIcon, ThumbsUp, Heart, X } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
 import ShareButtons from '../components/ShareButtons';
 import ImageSlider from '../components/ImageSlider';
@@ -122,6 +122,8 @@ export default function TimelineList() {
     });
   };
 
+  const [selectedItem, setSelectedItem] = useState<TimelineEvent | null>(null);
+
   return (
     <div className="timeline-page page-container container section-padding" style={{ paddingTop: '120px' }}>
       <div className="page-breadcrumbs">
@@ -145,9 +147,13 @@ export default function TimelineList() {
             return (
               <div key={event.id} className={`timeline-list-item ${isEven ? 'left-align' : 'right-align'} animate-fade-in`}>
                 <div className="timeline-badge saffron"></div>
-                <div className="timeline-panel glass-card" style={{ padding: '20px' }}>
+                <div 
+                  className="timeline-panel glass-card" 
+                  style={{ padding: '20px', cursor: 'pointer' }}
+                  onClick={() => setSelectedItem(event)}
+                >
                   {(event.images?.length || event.image) && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '16px' }} onClick={(e) => e.stopPropagation()}>
                       <ImageSlider images={event.images} image={event.image} altTitle={event.location} aspectRatio="16/9" />
                     </div>
                   )}
@@ -158,7 +164,7 @@ export default function TimelineList() {
                         <span className="panel-location"><MapPin size={14} /> {event.location}</span>
                       </div>
                       <button
-                        onClick={() => handleLike(event.id)}
+                        onClick={(e) => { e.stopPropagation(); handleLike(event.id); }}
                         disabled={event.liked}
                         style={{
                           background: 'none',
@@ -180,7 +186,7 @@ export default function TimelineList() {
                     </div>
                     <p className="timeline-panel-text" style={{ marginBottom: '16px' }}>{event.text}</p>
                     
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }} onClick={(e) => e.stopPropagation()}>
                       <ShareButtons title={`Journey Timeline: ${event.text.substring(0, 60)}...`} />
                     </div>
                   </div>
@@ -188,6 +194,31 @@ export default function TimelineList() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedItem && (
+        <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
+          <div className="modal-content glass-card animate-fade-in" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+            <button className="modal-close" onClick={() => setSelectedItem(null)}>
+              <X size={24} />
+            </button>
+            <div className="modal-body">
+              <ImageSlider images={selectedItem.images} image={selectedItem.image} altTitle={selectedItem.location} aspectRatio="16/9" />
+              <div className="modal-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                <span className="event-date"><Calendar size={14} /> {selectedItem.date}</span>
+                {selectedItem.location && <span className="event-location"><MapPin size={14} /> {selectedItem.location}</span>}
+              </div>
+              <p className="modal-text" style={{ fontSize: '1.05rem', lineHeight: '1.6', marginTop: '16px', color: 'var(--text-primary)' }}>
+                {selectedItem.text}
+              </p>
+
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <ShareButtons title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
