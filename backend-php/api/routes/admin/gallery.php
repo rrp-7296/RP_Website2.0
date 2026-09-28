@@ -43,17 +43,23 @@ if (($method === 'DELETE' || ($method === 'POST' && str_ends_with($path, '/delet
     ($m = match_route('/admin/gallery/{id}', $path) ?: match_route('/admin/gallery/{id}/delete', $path)) !== false) {
     $id = (int) $m['id'];
 
-    $stmt = $db->prepare('SELECT id, filename FROM gallery_images WHERE id = ? LIMIT 1');
-    $stmt->execute([$id]);
-    $img = $stmt->fetch();
-    if (!$img) json_error('Image not found', 404);
+    try {
+        $stmt = $db->prepare('SELECT id, filename FROM gallery_images WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $img = $stmt->fetch();
+        if (!$img) json_error('Image not found', 404);
 
-    if (!empty($img['filename'])) {
-        delete_upload((string) $img['filename'], 'gallery');
+        if (!empty($img['filename'])) {
+            @delete_upload((string) $img['filename'], 'gallery');
+        }
+
+        $delStmt = $db->prepare('DELETE FROM gallery_images WHERE id = ?');
+        $delStmt->execute([$id]);
+
+        json_message('Image deleted successfully');
+    } catch (Throwable $e) {
+        json_error('Failed to delete gallery image: ' . $e->getMessage(), 500);
     }
-    $db->prepare('DELETE FROM gallery_images WHERE id = ?')->execute([$id]);
-
-    json_message('Image deleted');
 }
 
 json_error("Not found: [$method] $path", 404);

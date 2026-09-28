@@ -176,21 +176,25 @@ function format_item_images(array &$item): void {
  * Delete an uploaded file.
  */
 function delete_upload(?string $filename, string $category = ''): void {
-    if (empty($filename)) {
-        return;
-    }
-    if (str_starts_with($filename, 'uploads/')) {
-        $filename = substr($filename, strlen('uploads/'));
-    }
-    if ($category !== '' && str_starts_with($filename, $category . '/')) {
-        $path = UPLOAD_DIR . '/' . $filename;
-    } elseif ($category !== '') {
-        $path = UPLOAD_DIR . '/' . $category . '/' . $filename;
-    } else {
-        $path = UPLOAD_DIR . '/' . $filename;
-    }
-    if (file_exists($path)) {
-        @unlink($path);
+    try {
+        if (empty($filename)) {
+            return;
+        }
+        if (str_starts_with($filename, 'uploads/')) {
+            $filename = substr($filename, strlen('uploads/'));
+        }
+        if ($category !== '' && str_starts_with($filename, $category . '/')) {
+            $path = UPLOAD_DIR . '/' . $filename;
+        } elseif ($category !== '') {
+            $path = UPLOAD_DIR . '/' . $category . '/' . $filename;
+        } else {
+            $path = UPLOAD_DIR . '/' . $filename;
+        }
+        if (file_exists($path)) {
+            @unlink($path);
+        }
+    } catch (Throwable $e) {
+        // Suppress file system errors so database operation succeeds
     }
 }
 
