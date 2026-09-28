@@ -11,9 +11,13 @@ if ($method === 'POST' && $path === '/auth/login') {
     $username = trim((string)require_field($body, 'username'));
     $password = (string)require_field($body, 'password');
 
-    $stmt = $db->prepare('SELECT id, username, display_name, email, password_hash FROM admin_users WHERE LOWER(username) = LOWER(?) LIMIT 1');
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = $db->prepare('SELECT id, username, display_name, email, password_hash FROM admin_users WHERE LOWER(username) = LOWER(?) LIMIT 1');
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+    } catch (Exception $e) {
+        json_error('Database error: ' . $e->getMessage(), 500);
+    }
 
     if (!$user || !verify_password($password, $user['password_hash'])) {
         json_error('Invalid username or password', 401);
