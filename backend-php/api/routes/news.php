@@ -15,7 +15,7 @@ if ($method === 'GET' && $path === '/news') {
     $result = paginate(
         $db,
         'SELECT COUNT(*) FROM news_items WHERE (is_published = 1 OR is_published IS NULL) AND (is_deleted = 0 OR is_deleted IS NULL)',
-        'SELECT id, title, text, url, image, date, likes_count, created_at
+        'SELECT id, title, text, url, image, images, date, likes_count, created_at
          FROM news_items
          WHERE (is_published = 1 OR is_published IS NULL) AND (is_deleted = 0 OR is_deleted IS NULL)
          ORDER BY COALESCE(date, created_at) DESC, id DESC
@@ -28,6 +28,7 @@ if ($method === 'GET' && $path === '/news') {
     foreach ($result['items'] as &$item) {
         $item['likes'] = (int) ($item['likes_count'] ?? 0);
         $item['likes_count'] = $item['likes'];
+        format_item_images($item);
     }
 
     json_success($result);
@@ -38,7 +39,7 @@ if ($method === 'GET' && ($m = match_route('/news/{id}', $path)) !== false) {
     $id   = (int) $m['id'];
 
     $stmt = $db->prepare(
-        'SELECT id, title, text, url, image, date, likes_count, created_at
+        'SELECT id, title, text, url, image, images, date, likes_count, created_at
          FROM news_items WHERE id = ? AND is_deleted = 0 LIMIT 1'
     );
     $stmt->execute([$id]);
@@ -50,6 +51,7 @@ if ($method === 'GET' && ($m = match_route('/news/{id}', $path)) !== false) {
 
     $item['likes'] = (int) ($item['likes_count'] ?? 0);
     $item['likes_count'] = $item['likes'];
+    format_item_images($item);
 
     json_success($item);
 }

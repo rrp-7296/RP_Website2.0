@@ -16,7 +16,7 @@ if ($method === 'GET' && $path === '/blogs/popular') {
     $limit = min((int) ($_GET['limit'] ?? 3), 10);
 
     $stmt = $db->prepare(
-        'SELECT id, title, description, image, date, likes_count, view_count
+        'SELECT id, title, description, image, images, date, likes_count, view_count
          FROM blog_posts
          WHERE is_published = 1 AND is_deleted = 0
          ORDER BY likes_count DESC
@@ -27,6 +27,7 @@ if ($method === 'GET' && $path === '/blogs/popular') {
     foreach ($items as &$item) {
         $item['views'] = (int) ($item['view_count'] ?? 0);
         $item['likes'] = (int) ($item['likes_count'] ?? 0);
+        format_item_images($item);
     }
     json_success($items);
 }
@@ -39,7 +40,7 @@ if ($method === 'GET' && $path === '/blogs') {
     $result = paginate(
         $db,
         'SELECT COUNT(*) FROM blog_posts WHERE is_published = 1 AND is_deleted = 0',
-        'SELECT id, title, description, image, date, likes_count, view_count
+        'SELECT id, title, description, image, images, date, likes_count, view_count
          FROM blog_posts
          WHERE is_published = 1 AND is_deleted = 0
          ORDER BY date DESC
@@ -52,6 +53,7 @@ if ($method === 'GET' && $path === '/blogs') {
     foreach ($result['items'] as &$item) {
         $item['views'] = (int) ($item['view_count'] ?? 0);
         $item['likes'] = (int) ($item['likes_count'] ?? 0);
+        format_item_images($item);
     }
 
     json_success($result);
@@ -62,7 +64,7 @@ if ($method === 'GET' && ($m = match_route('/blogs/{id}', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare(
-        'SELECT id, title, description, main_body, image, date, likes_count, view_count
+        'SELECT id, title, description, main_body, image, images, date, likes_count, view_count
          FROM blog_posts WHERE id = ? AND is_deleted = 0 LIMIT 1'
     );
     $stmt->execute([$id]);
@@ -77,6 +79,7 @@ if ($method === 'GET' && ($m = match_route('/blogs/{id}', $path)) !== false) {
     $post['view_count'] = (int) $post['view_count'] + 1;
     $post['views'] = (int) $post['view_count'];
     $post['likes'] = (int) ($post['likes_count'] ?? 0);
+    format_item_images($post);
 
     // Fetch approved comments
     $cStmt = $db->prepare(

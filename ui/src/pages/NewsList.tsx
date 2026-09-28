@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, Home as HomeIcon, X, ExternalLink, ThumbsUp, Heart } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
 import ShareButtons from '../components/ShareButtons';
+import ImageSlider from '../components/ImageSlider';
 import { useVisitor } from '../context/VisitorContext';
 
 interface NewsItem {
@@ -10,6 +11,7 @@ interface NewsItem {
   title: string;
   text: string;
   image?: string;
+  images?: string[];
   url?: string;
   date: string;
   likes: number;
@@ -88,6 +90,7 @@ export default function NewsList() {
             title: item.title,
             text: item.text,
             image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : []),
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
             url: item.url || undefined,
             likes: item.likes || item.likes_count || 0
@@ -162,7 +165,7 @@ export default function NewsList() {
           {news.map((item) => (
             <div key={item.id} className="news-card glass-card">
               <div className="news-card-img-wrapper">
-                <img src={item.image || '/img/edu/intuc.png'} alt={item.title} className="news-card-img" />
+                <ImageSlider images={item.images} image={item.image} altTitle={item.title} aspectRatio="16/9" />
               </div>
               <div className="news-card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -208,7 +211,7 @@ export default function NewsList() {
               <X size={24} />
             </button>
             <div className="modal-body">
-              <img src={selectedItem.image || '/img/edu/intuc.png'} alt={selectedItem.title} className="modal-img" />
+              <ImageSlider images={selectedItem.images} image={selectedItem.image} altTitle={selectedItem.title} aspectRatio="16/9" />
               <div className="modal-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                 <span><Calendar size={14} /> {selectedItem.date}</span>
                 <button

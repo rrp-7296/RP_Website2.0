@@ -15,22 +15,27 @@ if ($method === 'POST' && $adminPath === '/gallery') {
     $tag     = optional_field($_POST, 'tag', 'others');
     $caption = optional_field($_POST, 'caption', '');
 
-    // Image is required for gallery upload
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] === UPLOAD_ERR_NO_FILE) {
-        json_error('Image file is required', 422);
+    $uploadedImages = save_multiple_uploads('images', 'gallery');
+    if (empty($uploadedImages)) {
+        json_error('At least one image file is required', 422);
     }
 
-    $originalName = $_FILES['image']['name'] ?? '';
-    $filename     = save_upload('image', 'gallery');
-
+    $inserted = [];
     $stmt = $db->prepare(
         'INSERT INTO gallery_images (filename, original_name, tag, caption, is_published) VALUES (?, ?, ?, ?, 1)'
     );
-    $stmt->execute([$filename, $originalName, strtolower($tag), $caption]);
 
-    $id = (int) $db->lastInsertId();
+    foreach ($uploadedImages as $idx => $filename) {
+        $origName = is_array($_FILES['images']['name'] ?? null) ? ($_FILES['images']['name'][$idx] ?? '') : ($_FILES['image']['name'] ?? '');
+        $stmt->execute([$filename, $origName, strtolower($tag), $caption]);
+        $inserted[] = ['id' => (int) $db->lastInsertId(), 'filename' => $filename];
+    }
 
-    json_success(['id' => $id, 'filename' => $filename, 'message' => 'Image uploaded successfully']);
+    json_success([
+        'items' => $inserted,
+        'count' => count($inserted),
+        'message' => count($inserted) . ' image(s) uploaded successfully'
+    ]);
 }
 
 // DELETE /admin/gallery/{id}

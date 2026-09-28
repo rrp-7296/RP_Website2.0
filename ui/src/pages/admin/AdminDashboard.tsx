@@ -22,6 +22,30 @@ interface Stats {
   unread_notifications: number;
 }
 
+function ImageFilesPreview({ files, onRemove }: { files: File[], onRemove: (index: number) => void }) {
+  if (files.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+      {files.map((file, idx) => (
+        <div key={idx} style={{ position: 'relative', width: '75px', height: '75px', borderRadius: '8px', overflow: 'hidden', border: idx === 0 ? '2px solid #FF9933' : '1px solid rgba(255,255,255,0.2)', backgroundColor: '#0f172a' }}>
+          <img src={URL.createObjectURL(file)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: idx === 0 ? '#FF9933' : 'rgba(0,0,0,0.8)', color: idx === 0 ? '#0f172a' : '#fff', fontSize: '0.62rem', textAlign: 'center', fontWeight: 'bold', padding: '1px 0' }}>
+            {idx === 0 ? '1st (Cover)' : `${idx + 1}th`}
+          </span>
+          <button
+            type="button"
+            onClick={() => onRemove(idx)}
+            title="Remove image"
+            style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(239,68,68,0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -259,7 +283,7 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -289,8 +313,10 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
     formData.append('description', description);
     formData.append('main_body', body);
     formData.append('notify_subscribers', String(notifySubscribers));
-    if (imageFile) {
-      formData.append('image', imageFile);
+    if (imageFiles.length > 0) {
+      imageFiles.forEach(file => {
+        formData.append('images[]', file);
+      });
     }
 
     try {
@@ -304,7 +330,7 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
         setTitle('');
         setDescription('');
         setBody('');
-        setImageFile(null);
+        setImageFiles([]);
         fetchBlogs();
         onUpdate();
       }
@@ -358,8 +384,18 @@ function BlogsManager({ token, onUpdate }: { token: string | null, onUpdate: () 
                 <textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} required className="form-input" />
               </div>
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label>Featured Image File</label>
-                <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
+                <label>Featured Image Files (Select multiple)</label>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files || []);
+                    setImageFiles(prev => [...prev, ...newFiles]);
+                  }} 
+                  className="form-input" 
+                />
+                <ImageFilesPreview files={imageFiles} onRemove={(idx) => setImageFiles(prev => prev.filter((_, i) => i !== idx))} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <input
@@ -425,7 +461,7 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
   const [text, setText] = useState('');
   const [location, setLocation] = useState('');
   const [addToGallery, setAddToGallery] = useState(true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -455,8 +491,10 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
     formData.append('location', location);
     formData.append('add_to_gallery', String(addToGallery));
     formData.append('notify_subscribers', String(notifySubscribers));
-    if (imageFile) {
-      formData.append('image', imageFile);
+    if (imageFiles.length > 0) {
+      imageFiles.forEach(file => {
+        formData.append('images[]', file);
+      });
     }
 
     try {
@@ -468,7 +506,7 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
       if (res.ok) {
         setText('');
         setLocation('');
-        setImageFile(null);
+        setImageFiles([]);
         fetchEvents();
         onUpdate();
       }
@@ -513,8 +551,18 @@ function TimelineManager({ token, onUpdate }: { token: string | null, onUpdate: 
               <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Jamshedpur" className="form-input" />
             </div>
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label>Event Image File</label>
-              <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
+              <label>Event Image Files (Select multiple)</label>
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*"
+                onChange={(e) => {
+                  const newFiles = Array.from(e.target.files || []);
+                  setImageFiles(prev => [...prev, ...newFiles]);
+                }} 
+                className="form-input" 
+              />
+              <ImageFilesPreview files={imageFiles} onRemove={(idx) => setImageFiles(prev => prev.filter((_, i) => i !== idx))} />
             </div>
             <div className="form-group" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input type="checkbox" id="sync" checked={addToGallery} onChange={(e) => setAddToGallery(e.target.checked)} style={{ accentColor: '#FF9933' }} />
@@ -561,7 +609,7 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [notifySubscribers, setNotifySubscribers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -591,8 +639,10 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
     formData.append('text', text);
     formData.append('url', url);
     formData.append('notify_subscribers', String(notifySubscribers));
-    if (imageFile) {
-      formData.append('image', imageFile);
+    if (imageFiles.length > 0) {
+      imageFiles.forEach(file => {
+        formData.append('images[]', file);
+      });
     }
 
     try {
@@ -605,7 +655,7 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
         setTitle('');
         setText('');
         setUrl('');
-        setImageFile(null);
+        setImageFiles([]);
         fetchNews();
         onUpdate();
       }
@@ -653,8 +703,18 @@ function NewsManager({ token, onUpdate }: { token: string | null, onUpdate: () =
               <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className="form-input" />
             </div>
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label>News Banner Image</label>
-              <input type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
+              <label>News Banner Images (Select multiple)</label>
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*"
+                onChange={(e) => {
+                  const newFiles = Array.from(e.target.files || []);
+                  setImageFiles(prev => [...prev, ...newFiles]);
+                }} 
+                className="form-input" 
+              />
+              <ImageFilesPreview files={imageFiles} onRemove={(idx) => setImageFiles(prev => prev.filter((_, i) => i !== idx))} />
             </div>
             <div className="form-group" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input type="checkbox" id="notifyNews" checked={notifySubscribers} onChange={(e) => setNotifySubscribers(e.target.checked)} style={{ accentColor: '#FF9933' }} />
@@ -695,7 +755,7 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
   const [images, setImages] = useState<any[]>([]);
   const [tag, setTag] = useState('others');
   const [caption, setCaption] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -716,13 +776,15 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !imageFile) return;
+    if (!token || imageFiles.length === 0) return;
     setSubmitting(true);
 
     const formData = new FormData();
     formData.append('tag', tag);
     formData.append('caption', caption);
-    formData.append('image', imageFile);
+    imageFiles.forEach(file => {
+      formData.append('images[]', file);
+    });
 
     try {
       const res = await fetch(apiUrl('/admin/gallery'), {
@@ -732,7 +794,7 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
       });
       if (res.ok) {
         setCaption('');
-        setImageFile(null);
+        setImageFiles([]);
         fetchImages();
         onUpdate();
       }
@@ -765,7 +827,7 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
 
       <div className="grid-2" style={{ alignItems: 'start', gap: '32px', gridTemplateColumns: '320px 1fr' }}>
         <div className="upload-form glass-card" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}><Upload size={18} style={{ display: 'inline', marginRight: '8px' }} /> Upload Photo</h3>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}><Upload size={18} style={{ display: 'inline', marginRight: '8px' }} /> Upload Photos</h3>
           <form onSubmit={handleSubmit} className="dash-form">
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label className="form-label">Tag Category</label>
@@ -782,11 +844,22 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
               <input type="text" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Description of photo" className="form-input" />
             </div>
             <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label>Choose File</label>
-              <input type="file" required onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="form-input" />
+              <label>Choose Files (Select multiple)</label>
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*"
+                required={imageFiles.length === 0} 
+                onChange={(e) => {
+                  const newFiles = Array.from(e.target.files || []);
+                  setImageFiles(prev => [...prev, ...newFiles]);
+                }} 
+                className="form-input" 
+              />
+              <ImageFilesPreview files={imageFiles} onRemove={(idx) => setImageFiles(prev => prev.filter((_, i) => i !== idx))} />
             </div>
-            <button type="submit" disabled={submitting || !imageFile} className="btn btn-saffron" style={{ width: '100%' }}>
-              {submitting ? 'Uploading...' : 'Upload Image'}
+            <button type="submit" disabled={submitting || imageFiles.length === 0} className="btn btn-saffron" style={{ width: '100%' }}>
+              {submitting ? 'Uploading...' : `Upload ${imageFiles.length > 0 ? imageFiles.length : ''} Image(s)`}
             </button>
           </form>
         </div>

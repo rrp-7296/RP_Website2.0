@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Calendar, Eye, ThumbsUp, Home as HomeIcon, MessageSquare, Send, Heart } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
 import ShareButtons from '../components/ShareButtons';
+import ImageSlider from '../components/ImageSlider';
 import { useVisitor } from '../context/VisitorContext';
 
 
@@ -18,6 +19,7 @@ interface BlogPost {
   title: string;
   description: string;
   image?: string;
+  images?: string[];
   date: string;
   views: number;
   likes: number;
@@ -254,8 +256,8 @@ export default function BlogPost() {
             </div>
           </div>
 
-          <div className="blog-post-detail-img-wrapper">
-            <img src={post.image || '/img/58.jpg'} alt={post.title} className="blog-post-detail-img" />
+          <div style={{ marginBottom: '24px' }}>
+            <ImageSlider images={post.images} image={post.image} altTitle={post.title} aspectRatio="16/9" />
           </div>
 
           <div className="blog-post-detail-body">

@@ -69,6 +69,110 @@ function save_upload(string $fileKey, string $category): ?string {
 }
 
 /**
+ * Handle multiple file uploads from $_FILES for keys like 'images' or 'images[]' or 'image'.
+ *
+ * @param string $fileKey  Key in $_FILES (e.g. 'images' or 'image')
+ * @param string $category Subdirectory: 'blog', 'gallery', 'news', 'timeline'
+ * @return array<string>   Array of saved relative filenames
+ */
+function save_multiple_uploads(string $fileKey, string $category): array {
+    $savedFiles = [];
+
+    // Check if $_FILES[$fileKey] exists
+    if (isset($_FILES[$fileKey])) {
+        $fileObj = $_FILES[$fileKey];
+
+        if (is_array($fileObj['name'])) {
+            // Multiple files array format
+            $count = count($fileObj['name']);
+            for ($i = 0; $i < $count; $i++) {
+                if ($fileObj['error'][$i] === UPLOAD_ERR_NO_FILE) {
+                    continue;
+                }
+                if ($fileObj['error'][$i] !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $singleTmp = $fileObj['tmp_name'][$i];
+                $singleSize = $fileObj['size'][$i];
+
+                $maxBytes = MAX_UPLOAD_MB * 1024 * 1024;
+                if ($singleSize > $maxBytes) continue;
+
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime  = finfo_file($finfo, $singleTmp);
+                finfo_close($finfo);
+
+                if (!in_array($mime, $allowedMimes, true)) continue;
+
+                $extMap = ['image/jpeg' => 'jpg', 'image/jpg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                $ext = $extMap[$mime] ?? 'jpg';
+                $filename = bin2hex(random_bytes(16)) . '.' . $ext;
+
+                $destDir = UPLOAD_DIR . '/' . $category;
+                if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+                $destPath = $destDir . '/' . $filename;
+
+                if (extension_loaded('gd') && in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])) {
+                    resize_and_save($singleTmp, $destPath, $mime, MAX_IMAGE_WIDTH);
+                } else {
+                    @move_uploaded_file($singleTmp, $destPath);
+                }
+
+                $savedFiles[] = $category . '/' . $filename;
+            }
+        } else {
+            // Single file format
+            $saved = save_upload($fileKey, $category);
+            if ($saved) $savedFiles[] = $saved;
+        }
+    }
+
+    // Also check alternate fallback key if 'images' vs 'image'
+    $altKey = ($fileKey === 'images') ? 'image' : 'images';
+    if (empty($savedFiles) && isset($_FILES[$altKey])) {
+        $altSaved = save_multiple_uploads($altKey, $category);
+        if (!empty($altSaved)) {
+            $savedFiles = array_merge($savedFiles, $altSaved);
+        }
+    }
+
+    return array_values(array_unique($savedFiles));
+}
+
+/**
+ * Format item's image and images array fields cleanly for API output.
+ * Ensures `images` is always a JSON-parsed list of full image paths/filenames,
+ * and `image` is the primary (1st) image string.
+ */
+function format_item_images(array &$item): void {
+    $imagesList = [];
+
+    if (!empty($item['images'])) {
+        if (is_array($item['images'])) {
+            $imagesList = $item['images'];
+        } else {
+            $decoded = json_decode($item['images'], true);
+            if (is_array($decoded)) {
+                $imagesList = $decoded;
+            } else {
+                $imagesList = array_map('trim', explode(',', $item['images']));
+            }
+        }
+    }
+
+    if (empty($imagesList) && !empty($item['image'])) {
+        $imagesList = [$item['image']];
+    }
+
+    $imagesList = array_values(array_filter($imagesList));
+    $item['images'] = $imagesList;
+    $item['image'] = !empty($imagesList) ? $imagesList[0] : ($item['image'] ?? null);
+}
+
+
+/**
  * Delete an uploaded file.
  */
 function delete_upload(string $filename, string $category = ''): void {

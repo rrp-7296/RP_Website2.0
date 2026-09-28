@@ -16,22 +16,26 @@ if ($method === 'POST' && $adminPath === '/timeline') {
     $location      = optional_field($_POST, 'location', '');
     $add_to_gallery = filter_var($_POST['add_to_gallery'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
 
-    $filename = save_upload('image', 'timeline');
+    $uploadedImages = save_multiple_uploads('images', 'timeline');
+    $primaryImage   = !empty($uploadedImages) ? $uploadedImages[0] : null;
+    $imagesJson     = !empty($uploadedImages) ? json_encode($uploadedImages, JSON_UNESCAPED_SLASHES) : null;
 
     $stmt = $db->prepare(
-        'INSERT INTO timeline_events (text, location, image, add_to_gallery, is_published, is_deleted) VALUES (?, ?, ?, ?, 1, 0)'
+        'INSERT INTO timeline_events (text, location, image, images, add_to_gallery, is_published, is_deleted) VALUES (?, ?, ?, ?, ?, 1, 0)'
     );
-    $stmt->execute([$text, $location, $filename, (int) $add_to_gallery]);
+    $stmt->execute([$text, $location, $primaryImage, $imagesJson, (int) $add_to_gallery]);
 
     $eventId = (int) $db->lastInsertId();
 
-    // Auto-add to gallery
-    if ($add_to_gallery && $filename) {
+    // Auto-add all uploaded images to gallery
+    if ($add_to_gallery && !empty($uploadedImages)) {
         $caption = mb_substr($text, 0, 200);
-        $db->prepare(
+        $gStmt = $db->prepare(
             "INSERT INTO gallery_images (filename, tag, caption, source_timeline_id, is_published) VALUES (?, 'timeline', ?, ?, 1)"
-        )->execute([$filename, $caption, $eventId]);
-
+        );
+        foreach ($uploadedImages as $imgFile) {
+            $gStmt->execute([$imgFile, $caption, $eventId]);
+        }
     }
 
     $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;

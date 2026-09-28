@@ -17,12 +17,14 @@ if ($method === 'POST' && $adminPath === '/blogs') {
     $description = optional_field($_POST, 'description', '');
     $main_body   = require_field($_POST, 'main_body');
 
-    $filename = save_upload('image', 'blog');
+    $uploadedImages = save_multiple_uploads('images', 'blog');
+    $primaryImage   = !empty($uploadedImages) ? $uploadedImages[0] : null;
+    $imagesJson     = !empty($uploadedImages) ? json_encode($uploadedImages, JSON_UNESCAPED_SLASHES) : null;
 
     $stmt = $db->prepare(
-        'INSERT INTO blog_posts (title, description, main_body, image) VALUES (?, ?, ?, ?)'
+        'INSERT INTO blog_posts (title, description, main_body, image, images) VALUES (?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$title, $description, $main_body, $filename]);
+    $stmt->execute([$title, $description, $main_body, $primaryImage, $imagesJson]);
     $id = (int) $db->lastInsertId();
 
     $notify = filter_var($_POST['notify_subscribers'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
@@ -43,7 +45,7 @@ if ($method === 'POST' && $adminPath === '/blogs') {
 if ($method === 'PUT' && ($m = match_route('/admin/blogs/{id}', $path)) !== false) {
     $id = (int) $m['id'];
 
-    $stmt = $db->prepare('SELECT id, image FROM blog_posts WHERE id = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, image, images FROM blog_posts WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
     $post = $stmt->fetch();
     if (!$post) json_error('Blog post not found', 404);
@@ -51,7 +53,6 @@ if ($method === 'PUT' && ($m = match_route('/admin/blogs/{id}', $path)) !== fals
     $fields = [];
     $values = [];
 
-    // Support both form data and JSON body for fields
     $body = $_POST ?: get_body();
 
     if (isset($body['title']) && $body['title'] !== '')        { $fields[] = 'title = ?';        $values[] = $body['title']; }
@@ -59,12 +60,15 @@ if ($method === 'PUT' && ($m = match_route('/admin/blogs/{id}', $path)) !== fals
     if (isset($body['main_body']) && $body['main_body'] !== '') { $fields[] = 'main_body = ?';    $values[] = $body['main_body']; }
     if (isset($body['is_published']))                           { $fields[] = 'is_published = ?'; $values[] = (int)(bool)$body['is_published']; }
 
-    // Handle new image upload
-    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
-        if ($post['image']) delete_upload($post['image'], 'blog');
-        $newFile  = save_upload('image', 'blog');
+    // Handle new images upload
+    $uploadedImages = save_multiple_uploads('images', 'blog');
+    if (!empty($uploadedImages)) {
+        $primaryImage   = $uploadedImages[0];
+        $imagesJson     = json_encode($uploadedImages, JSON_UNESCAPED_SLASHES);
         $fields[] = 'image = ?';
-        $values[] = $newFile;
+        $values[] = $primaryImage;
+        $fields[] = 'images = ?';
+        $values[] = $imagesJson;
     }
 
     if (!empty($fields)) {

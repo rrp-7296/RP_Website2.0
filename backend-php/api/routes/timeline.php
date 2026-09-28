@@ -14,7 +14,7 @@ if ($method === 'GET' && $path === '/timeline') {
     $result = paginate(
         $db,
         'SELECT COUNT(*) FROM timeline_events WHERE (is_published = 1 OR is_published IS NULL) AND (is_deleted = 0 OR is_deleted IS NULL)',
-        'SELECT id, text, location, image, date, likes_count, add_to_gallery, created_at
+        'SELECT id, text, location, image, images, date, likes_count, add_to_gallery, created_at
          FROM timeline_events
          WHERE (is_published = 1 OR is_published IS NULL) AND (is_deleted = 0 OR is_deleted IS NULL)
          ORDER BY COALESCE(date, created_at) DESC, id DESC
@@ -27,6 +27,7 @@ if ($method === 'GET' && $path === '/timeline') {
     foreach ($result['items'] as &$item) {
         $item['likes'] = (int) ($item['likes_count'] ?? 0);
         $item['likes_count'] = $item['likes'];
+        format_item_images($item);
     }
 
     json_success($result);

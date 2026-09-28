@@ -15,12 +15,15 @@ if ($method === 'POST' && $adminPath === '/news') {
     $title    = require_field($_POST, 'title');
     $text     = require_field($_POST, 'text');
     $url      = optional_field($_POST, 'url', '');
-    $filename = save_upload('image', 'news');
+
+    $uploadedImages = save_multiple_uploads('images', 'news');
+    $primaryImage   = !empty($uploadedImages) ? $uploadedImages[0] : null;
+    $imagesJson     = !empty($uploadedImages) ? json_encode($uploadedImages, JSON_UNESCAPED_SLASHES) : null;
 
     $stmt = $db->prepare(
-        'INSERT INTO news_items (title, text, url, image, is_published, is_deleted) VALUES (?, ?, ?, ?, 1, 0)'
+        'INSERT INTO news_items (title, text, url, image, images, is_published, is_deleted) VALUES (?, ?, ?, ?, ?, 1, 0)'
     );
-    $stmt->execute([$title, $text, $url, $filename]);
+    $stmt->execute([$title, $text, $url, $primaryImage, $imagesJson]);
 
     $id = (int) $db->lastInsertId();
 

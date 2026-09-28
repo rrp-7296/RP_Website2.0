@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Home as HomeIcon, ThumbsUp, Heart } from 'lucide-react';
 import { apiUrl, uploadUrl } from '../config/api';
 import ShareButtons from '../components/ShareButtons';
+import ImageSlider from '../components/ImageSlider';
 import { useVisitor } from '../context/VisitorContext';
 
 interface TimelineEvent {
@@ -11,6 +12,7 @@ interface TimelineEvent {
   location: string;
   date: string;
   image?: string;
+  images?: string[];
   likes: number;
   liked?: boolean;
 }
@@ -76,6 +78,7 @@ export default function TimelineList() {
             location: item.location || 'Jamshedpur',
             date: item.date ? new Date(item.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recent',
             image: item.image ? uploadUrl(item.image) : undefined,
+            images: Array.isArray(item.images) ? item.images.map((img: string) => uploadUrl(img)) : (item.image ? [uploadUrl(item.image)] : []),
             likes: item.likes || item.likes_count || 0
           }));
           setEvents(formatted);
@@ -143,9 +146,9 @@ export default function TimelineList() {
               <div key={event.id} className={`timeline-list-item ${isEven ? 'left-align' : 'right-align'} animate-fade-in`}>
                 <div className="timeline-badge saffron"></div>
                 <div className="timeline-panel glass-card" style={{ padding: '20px' }}>
-                  {event.image && (
-                    <div className="timeline-panel-img-wrapper">
-                      <img src={event.image} alt={event.location} className="timeline-panel-img" />
+                  {(event.images?.length || event.image) && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <ImageSlider images={event.images} image={event.image} altTitle={event.location} aspectRatio="16/9" />
                     </div>
                   )}
                   <div className="timeline-panel-body">

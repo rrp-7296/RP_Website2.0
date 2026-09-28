@@ -28,6 +28,9 @@ function get_db(): PDO {
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
             }
+
+            // Ensure `images` column exists on blog_posts, news_items, timeline_events, gallery_images
+            ensure_images_columns($pdo);
         } catch (Exception $e) {
             if (DEBUG) {
                 json_error('Database connection failed: ' . $e->getMessage(), 500);
@@ -39,6 +42,25 @@ function get_db(): PDO {
     }
     return $pdo;
 }
+
+/**
+ * Auto-migrate database tables to add `images TEXT NULL` column if missing.
+ */
+function ensure_images_columns(PDO $pdo): void {
+    static $migrated = false;
+    if ($migrated) return;
+    $migrated = true;
+
+    $tables = ['blog_posts', 'news_items', 'timeline_events', 'gallery_images'];
+    foreach ($tables as $t) {
+        try {
+            $pdo->exec("ALTER TABLE {$t} ADD COLUMN images TEXT NULL");
+        } catch (Exception $e) {
+            // Column already exists or table doesn't exist yet
+        }
+    }
+}
+
 
 
 /**
