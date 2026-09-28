@@ -38,8 +38,9 @@ if ($method === 'POST' && $adminPath === '/gallery') {
     ]);
 }
 
-// DELETE /admin/gallery/{id}
-if ($method === 'DELETE' && ($m = match_route('/admin/gallery/{id}', $path)) !== false) {
+// DELETE /admin/gallery/{id} or POST /admin/gallery/{id}/delete
+if (($method === 'DELETE' || ($method === 'POST' && str_ends_with($path, '/delete'))) && 
+    ($m = match_route('/admin/gallery/{id}', $path) ?: match_route('/admin/gallery/{id}/delete', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare('SELECT id, filename FROM gallery_images WHERE id = ? LIMIT 1');
@@ -47,7 +48,9 @@ if ($method === 'DELETE' && ($m = match_route('/admin/gallery/{id}', $path)) !==
     $img = $stmt->fetch();
     if (!$img) json_error('Image not found', 404);
 
-    delete_upload($img['filename'], 'gallery');
+    if (!empty($img['filename'])) {
+        delete_upload((string) $img['filename'], 'gallery');
+    }
     $db->prepare('DELETE FROM gallery_images WHERE id = ?')->execute([$id]);
 
     json_message('Image deleted');

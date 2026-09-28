@@ -81,7 +81,8 @@ if ($method === 'PUT' && ($m = match_route('/admin/blogs/{id}', $path)) !== fals
 }
 
 // DELETE /admin/blogs/{id}
-if ($method === 'DELETE' && ($m = match_route('/admin/blogs/{id}', $path)) !== false) {
+if (($method === 'DELETE' || ($method === 'POST' && str_ends_with($path, '/delete'))) && 
+    ($m = match_route('/admin/blogs/{id}', $path) ?: match_route('/admin/blogs/{id}/delete', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare('SELECT id FROM blog_posts WHERE id = ? LIMIT 1');

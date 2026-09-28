@@ -54,7 +54,8 @@ if ($method === 'POST' && $adminPath === '/timeline') {
 }
 
 // DELETE /admin/timeline/{id}
-if ($method === 'DELETE' && ($m = match_route('/admin/timeline/{id}', $path)) !== false) {
+if (($method === 'DELETE' || ($method === 'POST' && str_ends_with($path, '/delete'))) && 
+    ($m = match_route('/admin/timeline/{id}', $path) ?: match_route('/admin/timeline/{id}/delete', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare('SELECT id FROM timeline_events WHERE id = ? LIMIT 1');
@@ -69,7 +70,9 @@ if ($method === 'DELETE' && ($m = match_route('/admin/timeline/{id}', $path)) !=
     $gStmt->execute([$id]);
     $galImg = $gStmt->fetch();
     if ($galImg) {
-        delete_upload($galImg['filename'], 'timeline');
+        if (!empty($galImg['filename'])) {
+            delete_upload((string) $galImg['filename'], 'timeline');
+        }
         $db->prepare('DELETE FROM gallery_images WHERE id = ?')->execute([$galImg['id']]);
     }
 

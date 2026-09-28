@@ -42,7 +42,8 @@ if ($method === 'POST' && $adminPath === '/news') {
 }
 
 // DELETE /admin/news/{id}
-if ($method === 'DELETE' && ($m = match_route('/admin/news/{id}', $path)) !== false) {
+if (($method === 'DELETE' || ($method === 'POST' && str_ends_with($path, '/delete'))) && 
+    ($m = match_route('/admin/news/{id}', $path) ?: match_route('/admin/news/{id}/delete', $path)) !== false) {
     $id = (int) $m['id'];
 
     $stmt = $db->prepare('SELECT id FROM news_items WHERE id = ? LIMIT 1');

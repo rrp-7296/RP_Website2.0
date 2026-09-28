@@ -808,13 +808,22 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this image from gallery?')) return;
     try {
-      const res = await fetch(apiUrl(`/admin/gallery/${id}`), {
+      let res = await fetch(apiUrl(`/admin/gallery/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        res = await fetch(apiUrl(`/admin/gallery/${id}/delete`), {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       if (res.ok) {
         fetchImages();
         onUpdate();
+      } else {
+        const errData = await res.json().catch(() => null);
+        alert(errData?.detail || errData?.message || 'Delete failed');
       }
     } catch (e) {
       alert('Delete failed');
