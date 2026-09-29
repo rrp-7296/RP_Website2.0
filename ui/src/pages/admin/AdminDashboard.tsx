@@ -8,6 +8,7 @@ import {
   Bell, Menu, X, Users, RefreshCw
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
+import { initAdminPushNotifications, stopAdminPushNotifications } from '../../services/adminPushNotifications';
 
 type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
 
@@ -60,15 +61,19 @@ export default function AdminDashboard() {
   // Verify Auth on Load
   useEffect(() => {
     if (!token) {
+      stopAdminPushNotifications();
       navigate('/admin');
       return;
     }
+
+    initAdminPushNotifications();
 
     fetch(apiUrl('/auth/me'), {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
       if (!res.ok) {
+        stopAdminPushNotifications();
         localStorage.removeItem('admin_token');
         navigate('/admin');
       }
@@ -101,6 +106,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
+    stopAdminPushNotifications();
     localStorage.removeItem('admin_token');
     navigate('/admin');
   };

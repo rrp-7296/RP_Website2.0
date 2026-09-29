@@ -19,6 +19,7 @@ import NotFound from './pages/NotFound';
 import { VisitorProvider } from './context/VisitorContext';
 import VisitorLoginModal from './components/VisitorLoginModal';
 import VisitorWelcomeToast from './components/VisitorWelcomeToast';
+import { initAdminPushNotifications } from './services/adminPushNotifications';
 import './App.css';
 
 // A layout wrapper that decides whether to show Navbar/Footer
@@ -74,6 +75,12 @@ function AppContent() {
 
 function App() {
   const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    if (localStorage.getItem('admin_token')) {
+      initAdminPushNotifications();
+    }
+  }, []);
 
   return (
     <VisitorProvider>

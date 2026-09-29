@@ -4,6 +4,8 @@ import { Lock, User, AlertCircle, Shield } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { apiUrl } from '../../config/api';
 
+import { initAdminPushNotifications } from '../../services/adminPushNotifications';
+
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +33,7 @@ export default function AdminLogin() {
 
       if (response.ok) {
         localStorage.setItem('admin_token', data.access_token);
+        initAdminPushNotifications();
         navigate('/admin/dashboard');
       } else {
         setError(data.error || data.detail || 'Invalid username or password. Please try again.');
