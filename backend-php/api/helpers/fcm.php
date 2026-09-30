@@ -14,9 +14,22 @@ function broadcast_fcm_notification(string $title, string $message, array $extra
             return;
         }
 
-        // Check if firebase-service-account.json exists in public_html/api/config/
-        $serviceAccountPath = __DIR__ . '/../config/firebase-service-account.json';
-        if (!file_exists($serviceAccountPath)) {
+        // Check where firebase-service-account.json is located (api/, api/config/, or public_html/)
+        $possiblePaths = [
+            __DIR__ . '/../firebase-service-account.json',
+            __DIR__ . '/../config/firebase-service-account.json',
+            __DIR__ . '/../../firebase-service-account.json',
+        ];
+
+        $serviceAccountPath = null;
+        foreach ($possiblePaths as $p) {
+            if (file_exists($p)) {
+                $serviceAccountPath = $p;
+                break;
+            }
+        }
+
+        if (!$serviceAccountPath) {
             // Service account JSON not uploaded yet
             return;
         }
