@@ -1,8 +1,18 @@
 Options -Indexes
 
+# Allow all HTTP methods (needed for DELETE, PUT, PATCH on cPanel)
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /api/
+
+  # Handle HTTP method override via X-HTTP-Method-Override header
+  RewriteCond %{HTTP:X-HTTP-Method-Override} !=""
+  RewriteRule ^(.*)$ $1 [E=REQUEST_METHOD:%{HTTP:X-HTTP-Method-Override},L]
+
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^(.*)$ /api/index.php [QSA,L]

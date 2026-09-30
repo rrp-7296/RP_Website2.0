@@ -37,6 +37,43 @@ if ($method === 'POST' && ($adminPath === '/fcm-token' || $path === '/admin/fcm-
     json_success(['message' => 'FCM Token registered successfully']);
 }
 
+// POST /admin/notifications/test-push — Send a test FCM push to verify background delivery
+if ($method === 'POST' && ($adminPath === '/notifications/test-push' || $adminPath === '/test-push')) {
+    broadcast_fcm_notification(
+        '🧪 Test Push Notification',
+        'If you see this when the app is CLOSED, background push is working!'
+    );
+
+    // Also check FCM status for debugging
+    $tokenCount = $db->query('SELECT COUNT(*) FROM admin_fcm_tokens')->fetchColumn();
+
+    $serviceAccountExists = false;
+    foreach ([
+        __DIR__ . '/../../firebase-service-account.json',
+        __DIR__ . '/../../config/firebase-service-account.json',
+        __DIR__ . '/../../../firebase-service-account.json',
+    ] as $p) {
+        if (file_exists($p)) { $serviceAccountExists = true; break; }
+    }
+
+    // Check for debug log
+    $logFile = __DIR__ . '/../../logs/fcm_debug.log';
+    $lastLogLines = '';
+    if (file_exists($logFile)) {
+        $lines = file($logFile);
+        $lastLogLines = implode('', array_slice($lines, -10));
+    }
+
+    json_success([
+        'message' => 'Test push notification sent! Close the app completely and wait a few seconds.',
+        'debug' => [
+            'fcm_tokens_registered' => (int) $tokenCount,
+            'firebase_service_account_found' => $serviceAccountExists,
+            'recent_fcm_log' => $lastLogLines,
+        ]
+    ]);
+}
+
 // POST /admin/notifications/read-all  — must come before /{id}/read match
 if ($method === 'POST' && $adminPath === '/notifications/read-all') {
     $db->exec('UPDATE notifications SET is_read = 1 WHERE is_read = 0');
