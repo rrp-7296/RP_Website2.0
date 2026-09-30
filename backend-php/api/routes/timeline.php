@@ -61,6 +61,7 @@ if ($method === 'POST' && ($m = match_route('/timeline/{id}/like', $path)) !== f
         )->execute([$likeId, "'{$name}' liked timeline event '{$snippet}...'"]);
 
         $db->commit();
+        broadcast_fcm_notification('⚡ New Timeline Like', "'{$name}' liked timeline event '{$snippet}...'");
     } catch (Exception $e) {
         $db->rollBack();
         json_error('Failed to record like', 500);

@@ -83,6 +83,7 @@ if ($method === 'POST' && ($m = match_route('/news/{id}/like', $path)) !== false
         )->execute([$likeId, "'{$name}' liked news article '{$article['title']}'"]);
 
         $db->commit();
+        broadcast_fcm_notification('📰 New News Article Like', "'{$name}' liked news article '{$article['title']}'");
     } catch (Exception $e) {
         $db->rollBack();
         json_error('Failed to record like', 500);

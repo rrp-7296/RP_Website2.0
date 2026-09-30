@@ -123,6 +123,7 @@ if ($method === 'POST' && ($m = match_route('/blogs/{id}/like', $path)) !== fals
         )->execute([$id, $likeId, "'{$name}' liked your post '{$post['title']}'"]);
 
         $db->commit();
+        broadcast_fcm_notification('❤️ New Blog Like', "'{$name}' liked your post '{$post['title']}'");
     } catch (Exception $e) {
         $db->rollBack();
         json_error('Failed to record like', 500);
@@ -161,6 +162,7 @@ if ($method === 'POST' && ($m = match_route('/blogs/{id}/comments', $path)) !== 
         )->execute([$id, $commentId, "New comment from '{$name}' on '{$post['title']}'"]);
 
         $db->commit();
+        broadcast_fcm_notification('💬 New Blog Comment', "New comment from '{$name}' on '{$post['title']}'");
     } catch (Exception $e) {
         $db->rollBack();
         json_error('Failed to submit comment', 500);

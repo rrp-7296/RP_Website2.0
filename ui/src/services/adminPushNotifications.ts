@@ -50,16 +50,10 @@ export async function initAdminPushNotifications(): Promise<void> {
 
   // 1. Firebase Cloud Messaging (FCM) Closed-App Push Registration
   try {
-    const pushPerm = await PushNotifications.checkPermissions();
-    if (pushPerm.receive !== 'granted') {
-      await PushNotifications.requestPermissions();
-    }
-    await PushNotifications.register();
-
     if (!isInitialized) {
       PushNotifications.addListener('registration', async (fcmTokenData) => {
         try {
-          await fetch(apiUrl('/admin/fcm-token'), {
+          const res = await fetch(apiUrl('/admin/fcm-token'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -67,7 +61,14 @@ export async function initAdminPushNotifications(): Promise<void> {
             },
             body: JSON.stringify({ fcm_token: fcmTokenData.value })
           });
-        } catch (err) {}
+          if (!res.ok) console.error('[FCM] Token submission failed:', res.status);
+        } catch (err) {
+          console.error('[FCM] Error posting token:', err);
+        }
+      });
+
+      PushNotifications.addListener('registrationError', (err) => {
+        console.error('[FCM] Registration error:', err);
       });
 
       PushNotifications.addListener('pushNotificationActionPerformed', () => {
@@ -76,6 +77,12 @@ export async function initAdminPushNotifications(): Promise<void> {
         }
       });
     }
+
+    const pushPerm = await PushNotifications.checkPermissions();
+    if (pushPerm.receive !== 'granted') {
+      await PushNotifications.requestPermissions();
+    }
+    await PushNotifications.register();
   } catch (e) {
     // Non-native or web environment
   }
