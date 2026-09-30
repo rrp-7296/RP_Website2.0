@@ -22,6 +22,21 @@ if ($method === 'GET' && $adminPath === '/notifications') {
     json_success($stmt->fetchAll());
 }
 
+// POST /admin/fcm-token — Save FCM device token for admin closed-app push notifications
+if ($method === 'POST' && ($adminPath === '/fcm-token' || $path === '/admin/fcm-token')) {
+    $body = get_body();
+    $fcmToken = require_field($body, 'fcm_token');
+
+    try {
+        $stmt = $db->prepare('INSERT INTO admin_fcm_tokens (username, fcm_token) VALUES (?, ?)');
+        $stmt->execute([$username, $fcmToken]);
+    } catch (Exception $e) {
+        $db->prepare('UPDATE admin_fcm_tokens SET updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?')->execute([$fcmToken]);
+    }
+
+    json_success(['message' => 'FCM Token registered successfully']);
+}
+
 // POST /admin/notifications/read-all  — must come before /{id}/read match
 if ($method === 'POST' && $adminPath === '/notifications/read-all') {
     $db->exec('UPDATE notifications SET is_read = 1 WHERE is_read = 0');

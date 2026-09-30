@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "800947973208",
+    "project_id": "rakeshwarpandeyportfolio",
+    "storage_bucket": "rakeshwarpandeyportfolio.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:800947973208:android:8dc47f2770ce9b5e1d6e2d",
+        "android_client_info": {
+          "package_name": "com.rakes.portfolio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkLQJLuBtyr2RMalMTpTuCvvnuyhpptCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

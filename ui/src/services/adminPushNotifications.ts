@@ -1,4 +1,5 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { apiUrl } from '../config/api';
 
 const NOTIFIED_IDS_KEY = 'admin_notified_ids';
@@ -47,7 +48,39 @@ export async function initAdminPushNotifications(): Promise<void> {
     return;
   }
 
-  // Request permissions if in Capacitor Android environment
+  // 1. Firebase Cloud Messaging (FCM) Closed-App Push Registration
+  try {
+    const pushPerm = await PushNotifications.checkPermissions();
+    if (pushPerm.receive !== 'granted') {
+      await PushNotifications.requestPermissions();
+    }
+    await PushNotifications.register();
+
+    if (!isInitialized) {
+      PushNotifications.addListener('registration', async (fcmTokenData) => {
+        try {
+          await fetch(apiUrl('/admin/fcm-token'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ fcm_token: fcmTokenData.value })
+          });
+        } catch (err) {}
+      });
+
+      PushNotifications.addListener('pushNotificationActionPerformed', () => {
+        if (window.location.hash !== '#/admin/dashboard' && window.location.hash !== '#/admin') {
+          window.location.hash = '#/admin/dashboard';
+        }
+      });
+    }
+  } catch (e) {
+    // Non-native or web environment
+  }
+
+  // 2. Foreground / Active Local Notifications
   try {
     const status = await LocalNotifications.checkPermissions();
     if (status.display !== 'granted') {

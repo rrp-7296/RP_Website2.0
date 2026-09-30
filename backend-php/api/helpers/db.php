@@ -171,6 +171,16 @@ function ensure_tables_exist(PDO $pdo): void {
                 updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
             ) {$engine};
         ");
+
+        // 8. admin_fcm_tokens
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS admin_fcm_tokens (
+                id            {$pkAuto},
+                username      VARCHAR(100) NOT NULL,
+                fcm_token     TEXT NOT NULL UNIQUE,
+                updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) {$engine};
+        ");
     } catch (Exception $e) {
         // Log or silently continue if tables already created
     }

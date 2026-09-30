@@ -35,6 +35,7 @@ require_once $helpersDir . '/db.php';
 require_once $helpersDir . '/auth.php';
 require_once $helpersDir . '/upload.php';
 require_once $helpersDir . '/mail.php';
+require_once $helpersDir . '/fcm.php';
 
 // ─── CORS ─────────────────────────────────────────────────────────────────
 set_cors_headers();

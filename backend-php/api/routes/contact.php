@@ -24,9 +24,13 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
     $msgId = (int) $db->lastInsertId();
 
     // Create notification for admin dashboard
+    $notifText = "New contact message from: {$name} ({$email})";
     $db->prepare(
         "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('message', NULL, ?, ?)"
-    )->execute([$msgId, "New contact message from: {$name} ({$email})"]);
+    )->execute([$msgId, $notifText]);
+
+    // Send instant FCM push notification to admin phones
+    broadcast_fcm_notification('📩 New Contact Message', $notifText);
 
     // Best-effort notification email to site owner
     @send_notification_email($name, $email, $subject, $message);
@@ -83,9 +87,12 @@ if ($method === 'POST' && $path === '/visitors') {
     if (!$isExisting) {
         $contactInfo = array_filter([$email, $phone]);
         $infoStr = !empty($contactInfo) ? ' (' . implode(', ', $contactInfo) . ')' : '';
+        $notifMsg = "New visitor registered: '{$name}'{$infoStr}";
         $db->prepare(
             "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('visitor', NULL, ?, ?)"
-        )->execute([$visitorId, "New visitor registered: '{$name}'{$infoStr}"]);
+        )->execute([$visitorId, $notifMsg]);
+
+        broadcast_fcm_notification('🔔 New Subscriber Registration', $notifMsg);
     }
 
     json_success([
