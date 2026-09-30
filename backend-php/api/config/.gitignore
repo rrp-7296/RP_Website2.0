@@ -1,0 +1,2 @@
+# Ignore sensitive credentials in config folder
+*.json
