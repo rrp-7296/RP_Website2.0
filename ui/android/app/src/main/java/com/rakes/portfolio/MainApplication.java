@@ -33,6 +33,8 @@ public class MainApplication extends Application {
             adminChannel.setDescription("Push notifications for messages, comments, likes & subscribers");
             adminChannel.enableVibration(true);
             adminChannel.setShowBadge(true);
+            adminChannel.enableLights(true);
+            adminChannel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
 
             // Set default notification sound
             AudioAttributes audioAttributes = new AudioAttributes.Builder()

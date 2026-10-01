@@ -86,6 +86,16 @@ function broadcast_fcm_notification(string $title, string $message, array $extra
             // and data (for foreground handling).
             // CRITICAL: The 'notification' key is what makes Android display the
             // notification automatically when the app is closed/in background.
+            // Format extra data to ensure all values are strings (required by FCM HTTP v1 spec)
+            $dataPayload = [
+                'title'   => (string) $title,
+                'message' => (string) $message,
+            ];
+            foreach ($extraData as $k => $v) {
+                $dataPayload[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
+            }
+
+            // Build FCM v1 payload compliant with Android system notification manager
             $payload = [
                 'message' => [
                     'token' => $fcmToken,
@@ -94,20 +104,17 @@ function broadcast_fcm_notification(string $title, string $message, array $extra
                         'body'  => mb_substr($message, 0, 200),
                     ],
                     'android' => [
-                        'priority' => 'high',
+                        'priority' => 'HIGH',
                         'notification' => [
                             'sound' => 'default',
                             'channel_id' => 'admin_alerts',
                             'default_sound' => true,
                             'default_vibrate_timings' => true,
-                            'notification_priority' => 'PRIORITY_HIGH',
+                            'notification_priority' => 'PRIORITY_MAX',
+                            'visibility' => 'PUBLIC',
                         ]
                     ],
-                    'data' => array_merge([
-                        'title' => $title,
-                        'message' => $message,
-                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-                    ], $extraData)
+                    'data' => $dataPayload
                 ]
             ];
 
