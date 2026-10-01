@@ -38,6 +38,39 @@ function getNotificationEmojiTitle(type: string): string {
   }
 }
 
+export function getLocalFCMToken(): string | null {
+  try {
+    return localStorage.getItem('fcm_device_token');
+  } catch {
+    return null;
+  }
+}
+
+export async function submitFCMTokenToServer(fcmToken: string, customToken?: string): Promise<{ ok: boolean; status?: number; error?: string }> {
+  const token = customToken || localStorage.getItem('admin_token');
+  if (!token || !fcmToken) return { ok: false, error: 'Missing admin or FCM token' };
+
+  try {
+    const res = await fetch(apiUrl('/admin/fcm-token'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ fcm_token: fcmToken })
+    });
+    if (!res.ok) {
+      console.error('[FCM] Token submission failed:', res.status);
+      return { ok: false, status: res.status, error: `HTTP ${res.status}` };
+    }
+    console.log('[FCM] Token registered with server successfully');
+    return { ok: true, status: res.status };
+  } catch (err: any) {
+    console.error('[FCM] Error posting token:', err);
+    return { ok: false, error: err?.message || 'Network error' };
+  }
+}
+
 let isInitialized = false;
 let pollInterval: any = null;
 
@@ -53,17 +86,12 @@ export async function initAdminPushNotifications(): Promise<void> {
     if (!isInitialized) {
       PushNotifications.addListener('registration', async (fcmTokenData) => {
         try {
-          const res = await fetch(apiUrl('/admin/fcm-token'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ fcm_token: fcmTokenData.value })
-          });
-          if (!res.ok) console.error('[FCM] Token submission failed:', res.status);
+          if (fcmTokenData?.value) {
+            localStorage.setItem('fcm_device_token', fcmTokenData.value);
+            await submitFCMTokenToServer(fcmTokenData.value, token);
+          }
         } catch (err) {
-          console.error('[FCM] Error posting token:', err);
+          console.error('[FCM] Error posting token in listener:', err);
         }
       });
 
@@ -83,6 +111,12 @@ export async function initAdminPushNotifications(): Promise<void> {
       await PushNotifications.requestPermissions();
     }
     await PushNotifications.register();
+
+    // If we already have a cached token, ensure server has it
+    const cachedToken = getLocalFCMToken();
+    if (cachedToken) {
+      submitFCMTokenToServer(cachedToken, token);
+    }
   } catch (e) {
     // Non-native or web environment
   }

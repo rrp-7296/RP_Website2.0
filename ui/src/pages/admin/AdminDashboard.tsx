@@ -8,7 +8,7 @@ import {
   Bell, Menu, X, Users, RefreshCw
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
-import { initAdminPushNotifications, stopAdminPushNotifications } from '../../services/adminPushNotifications';
+import { initAdminPushNotifications, stopAdminPushNotifications, getLocalFCMToken, submitFCMTokenToServer } from '../../services/adminPushNotifications';
 
 type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
 
@@ -1174,10 +1174,69 @@ function NotificationsPanel({
 }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fcmStatus, setFcmStatus] = useState<any>(null);
+  const [fcmLoading, setFcmLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
+  const [diagMessage, setDiagMessage] = useState<string | null>(null);
+
+  const fetchFcmStatus = async () => {
+    setFcmLoading(true);
+    try {
+      const res = await fetch(apiUrl('/admin/notifications/fcm-status'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFcmStatus(data);
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setFcmLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchNotifications();
+    fetchFcmStatus();
   }, []);
+
+  const handleSyncToken = async () => {
+    const curToken = getLocalFCMToken();
+    if (!curToken) {
+      setDiagMessage('⚠️ No local FCM token stored on this device yet. Open the native Android app while logged in.');
+      return;
+    }
+    const res = await submitFCMTokenToServer(curToken, token || undefined);
+    if (res.ok) {
+      setDiagMessage('✅ Device FCM token registered successfully with server!');
+      fetchFcmStatus();
+    } else {
+      setDiagMessage(`❌ Token submission failed: ${res.error || res.status}`);
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setTestPushLoading(true);
+    setDiagMessage(null);
+    try {
+      const res = await fetch(apiUrl('/admin/notifications/test-push'), {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDiagMessage('🚀 Test push dispatched! Close or minimize the app to verify background delivery.');
+        fetchFcmStatus();
+      } else {
+        setDiagMessage(`❌ Test push failed: ${data?.detail || res.status}`);
+      }
+    } catch (err: any) {
+      setDiagMessage(`❌ Network error: ${err?.message}`);
+    } finally {
+      setTestPushLoading(false);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -1251,6 +1310,65 @@ function NotificationsPanel({
             <Check size={16} /> Mark All Read
           </button>
         )}
+      </div>
+
+      {/* ─── Push Notification Diagnostics Card ─── */}
+      <div className="glass-card" style={{ padding: '20px', marginBottom: '24px', borderLeft: '4px solid #f97316' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Bell size={18} style={{ color: '#f97316' }} /> Background Push Notification Diagnostics
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8 }}>
+              Verify FCM device registration and test background delivery when app is closed.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={handleSyncToken}
+              className="btn btn-outline btn-sm"
+              title="Re-register this device's token with the server"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <RefreshCw size={14} /> Sync Device Token
+            </button>
+            <button 
+              onClick={handleSendTestPush}
+              disabled={testPushLoading}
+              className="btn btn-primary btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Bell size={14} /> {testPushLoading ? 'Sending...' : 'Send Test Push'}
+            </button>
+          </div>
+        </div>
+
+        {diagMessage && (
+          <div style={{ padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.06)' }}>
+            {diagMessage}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', fontSize: '0.88rem' }}>
+          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Device Token (Local)</div>
+            <div style={{ fontWeight: '600', marginTop: '2px', wordBreak: 'break-all' }}>
+              {getLocalFCMToken() ? `✅ Registered (${getLocalFCMToken()?.slice(0, 16)}...)` : '⚠️ None (Android App Only)'}
+            </div>
+          </div>
+          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Server Registered Tokens</div>
+            <div style={{ fontWeight: '600', marginTop: '2px' }}>
+              {fcmLoading ? 'Checking...' : fcmStatus ? `${fcmStatus.fcm_tokens_registered} device(s) in DB` : 'Unknown'}
+            </div>
+          </div>
+          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Service Account File</div>
+            <div style={{ fontWeight: '600', marginTop: '2px' }}>
+              {fcmLoading ? 'Checking...' : fcmStatus?.firebase_service_account_found ? '✅ Detected on Server' : '❌ Not Found (Upload to api/)'}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="notifications-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

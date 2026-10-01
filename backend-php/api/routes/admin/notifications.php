@@ -37,6 +37,35 @@ if ($method === 'POST' && ($adminPath === '/fcm-token' || $path === '/admin/fcm-
     json_success(['message' => 'FCM Token registered successfully']);
 }
 
+// GET /admin/notifications/fcm-status — Check FCM configuration & token count
+if ($method === 'GET' && ($adminPath === '/notifications/fcm-status' || $adminPath === '/fcm-status')) {
+    $tokenCount = (int) $db->query('SELECT COUNT(*) FROM admin_fcm_tokens')->fetchColumn();
+
+    $serviceAccountPath = null;
+    $possiblePaths = [
+        __DIR__ . '/../../firebase-service-account.json',
+        __DIR__ . '/../../config/firebase-service-account.json',
+        __DIR__ . '/../../../firebase-service-account.json',
+    ];
+    foreach ($possiblePaths as $p) {
+        if (file_exists($p)) { $serviceAccountPath = $p; break; }
+    }
+
+    $logFile = __DIR__ . '/../../logs/fcm_debug.log';
+    $lastLogLines = '';
+    if (file_exists($logFile)) {
+        $lines = file($logFile);
+        $lastLogLines = implode('', array_slice($lines, -15));
+    }
+
+    json_success([
+        'fcm_tokens_registered' => $tokenCount,
+        'firebase_service_account_found' => !empty($serviceAccountPath),
+        'service_account_path' => $serviceAccountPath ? basename($serviceAccountPath) : null,
+        'recent_fcm_log' => $lastLogLines,
+    ]);
+}
+
 // POST /admin/notifications/test-push — Send a test FCM push to verify background delivery
 if ($method === 'POST' && ($adminPath === '/notifications/test-push' || $adminPath === '/test-push')) {
     broadcast_fcm_notification(
