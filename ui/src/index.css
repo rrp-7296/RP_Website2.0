@@ -2468,7 +2468,7 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 /* Global container safety */
 .admin-dashboard {
-  padding-top: 110px;
+  padding-top: 32px;
   padding-bottom: 60px;
   min-height: 90vh;
   width: 100%;
@@ -2879,6 +2879,36 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 /* MEDIA QUERIES: TABLET (<= 992px)                                          */
 /* ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 992px) {
+  .admin-dashboard {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .admin-dashboard.container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .admin-dash-header {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 16px;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px 16px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
   .mobile-menu-toggle {
     display: inline-flex !important;
     align-items: center;
@@ -2900,6 +2930,19 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   .dashboard-layout {
     grid-template-columns: 1fr;
     gap: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobile-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 998;
   }
 
   .dashboard-sidebar {
@@ -2939,18 +2982,23 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 /* ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .admin-dashboard {
-    padding-top: 80px !important;
-    padding-bottom: 40px !important;
+    padding-top: 0 !important;
+    padding-bottom: 30px !important;
   }
 
   .admin-dashboard.container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .admin-dash-header {
-    padding: 12px 14px;
-    margin-bottom: 16px;
+    padding: max(10px, env(safe-area-inset-top)) 12px 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .dashboard-layout {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .admin-dash-title {
