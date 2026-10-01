@@ -26,8 +26,11 @@ function fcm_log(string $message): void {
 function broadcast_fcm_notification(string $title, string $message, array $extraData = []): void {
     try {
         $db = get_db();
+        if (function_exists('ensure_fcm_tokens_table')) {
+            ensure_fcm_tokens_table($db);
+        }
         $stmt = $db->query('SELECT fcm_token FROM admin_fcm_tokens');
-        $tokens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $tokens = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
 
         if (empty($tokens)) {
             fcm_log("No FCM tokens registered — skipping push.");
@@ -42,6 +45,10 @@ function broadcast_fcm_notification(string $title, string $message, array $extra
             __DIR__ . '/../config/firebase-service-account.json',
             __DIR__ . '/../../firebase-service-account.json',
         ];
+        if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+            $possiblePaths[] = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/api/firebase-service-account.json';
+            $possiblePaths[] = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/firebase-service-account.json';
+        }
 
         $serviceAccountPath = null;
         foreach ($possiblePaths as $p) {

@@ -172,20 +172,34 @@ function ensure_tables_exist(PDO $pdo): void {
             ) {$engine};
         ");
 
-        // 8. admin_fcm_tokens
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS admin_fcm_tokens (
-                id            {$pkAuto},
-                username      VARCHAR(100) NOT NULL,
-                fcm_token     TEXT NOT NULL UNIQUE,
-                updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
-            ) {$engine};
-        ");
+        // 8. admin_fcm_tokens (use VARCHAR(255) because MySQL does not support UNIQUE on TEXT without key length)
+        ensure_fcm_tokens_table($pdo);
     } catch (Exception $e) {
         // Log or silently continue if tables already created
     }
 
     ensure_images_columns($pdo);
+}
+
+/**
+ * Ensure admin_fcm_tokens table exists with valid MySQL / SQLite schema.
+ */
+function ensure_fcm_tokens_table(PDO $pdo): void {
+    $isSQLite = (defined('DB_DRIVER') && DB_DRIVER === 'sqlite');
+    $pkAuto   = $isSQLite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY';
+    $engine   = $isSQLite ? '' : 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS admin_fcm_tokens (
+                id            {$pkAuto},
+                username      VARCHAR(100) NOT NULL,
+                fcm_token     VARCHAR(255) NOT NULL UNIQUE,
+                updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) {$engine};
+        ");
+    } catch (Exception $e) {
+        // Log or continue
+    }
 }
 
 /**

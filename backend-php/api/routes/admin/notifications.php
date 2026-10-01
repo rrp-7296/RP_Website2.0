@@ -27,11 +27,17 @@ if ($method === 'POST' && ($adminPath === '/fcm-token' || $path === '/admin/fcm-
     $body = get_body();
     $fcmToken = require_field($body, 'fcm_token');
 
+    ensure_fcm_tokens_table($db);
+
     try {
         $stmt = $db->prepare('INSERT INTO admin_fcm_tokens (username, fcm_token) VALUES (?, ?)');
         $stmt->execute([$username, $fcmToken]);
     } catch (Exception $e) {
-        $db->prepare('UPDATE admin_fcm_tokens SET updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?')->execute([$fcmToken]);
+        try {
+            $db->prepare('UPDATE admin_fcm_tokens SET updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?')->execute([$fcmToken]);
+        } catch (Exception $e2) {
+            json_error('Failed to register token: ' . $e2->getMessage(), 500);
+        }
     }
 
     json_success(['message' => 'FCM Token registered successfully']);
@@ -39,14 +45,26 @@ if ($method === 'POST' && ($adminPath === '/fcm-token' || $path === '/admin/fcm-
 
 // GET /admin/notifications/fcm-status — Check FCM configuration & token count
 if ($method === 'GET' && ($adminPath === '/notifications/fcm-status' || $adminPath === '/fcm-status')) {
-    $tokenCount = (int) $db->query('SELECT COUNT(*) FROM admin_fcm_tokens')->fetchColumn();
+    ensure_fcm_tokens_table($db);
 
-    $serviceAccountPath = null;
+    $tokenCount = 0;
+    try {
+        $tokenCount = (int) $db->query('SELECT COUNT(*) FROM admin_fcm_tokens')->fetchColumn();
+    } catch (Exception $e) {
+        $tokenCount = 0;
+    }
+
     $possiblePaths = [
         __DIR__ . '/../../firebase-service-account.json',
         __DIR__ . '/../../config/firebase-service-account.json',
         __DIR__ . '/../../../firebase-service-account.json',
     ];
+    if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+        $possiblePaths[] = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/api/firebase-service-account.json';
+        $possiblePaths[] = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/firebase-service-account.json';
+    }
+
+    $serviceAccountPath = null;
     foreach ($possiblePaths as $p) {
         if (file_exists($p)) { $serviceAccountPath = $p; break; }
     }
