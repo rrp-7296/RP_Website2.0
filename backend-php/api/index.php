@@ -190,7 +190,7 @@ if (str_starts_with($path, '/admin')) {
         require_once $routesDir . '/admin/comments.php';
         exit;
     }
-    if (str_starts_with($adminPath, '/notifications')) {
+    if ($adminPath === '/fcm-token' || str_starts_with($adminPath, '/notifications')) {
         require_once $routesDir . '/admin/notifications.php';
         exit;
     }
