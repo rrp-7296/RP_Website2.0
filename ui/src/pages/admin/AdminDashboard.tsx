@@ -117,28 +117,30 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="admin-dashboard container section-padding" style={{ paddingTop: '120px', minHeight: '90vh' }}>
+    <div className="admin-dashboard container">
       {/* Header */}
       <div className="admin-dash-header glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="admin-dash-title-group">
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
             className="mobile-menu-toggle btn-icon"
-            style={{ display: 'none' }}
             title="Toggle Menu"
+            aria-label="Toggle Menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <Shield className="saffron" size={28} />
-          <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '700', margin: '0' }}>Admin Dashboard</h1>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Welcome, Administrator</span>
+          <div className="admin-header-shield">
+            <Shield className="saffron" size={26} />
+          </div>
+          <div className="admin-header-text">
+            <h1 className="admin-dash-title">Admin Dashboard</h1>
+            <span className="admin-dash-sub">Welcome, Administrator</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="admin-dash-actions">
           <ThemeToggle />
-          <button onClick={handleLogout} className="btn btn-outline btn-sm" style={{ gap: '8px' }}>
-            <LogOut size={16} /> Logout
+          <button onClick={handleLogout} className="btn btn-outline btn-sm logout-btn" title="Logout">
+            <LogOut size={16} /> <span className="logout-text">Logout</span>
           </button>
         </div>
       </div>
@@ -232,49 +234,49 @@ export default function AdminDashboard() {
 function OverviewTab({ stats }: { stats: Stats }) {
   return (
     <div className="overview-tab animate-fade-in">
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '24px' }}>System Overview</h2>
-      <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
-        <div className="stat-card gradient-cyan" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
-          <div className="stat-icon-wrapper" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', color: 'white' }}><BookOpen size={24} /></div>
-          <div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', margin: '0', color: 'white' }}>{stats.total_blogs}</h3>
-            <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.85)' }}>Total Blogs</span>
+      <h2 style={{ fontSize: '1.4rem', fontWeight: '600', marginBottom: '20px' }}>System Overview</h2>
+      <div className="overview-stats-grid">
+        <div className="stat-card gradient-cyan">
+          <div className="stat-icon-wrapper"><BookOpen size={22} /></div>
+          <div className="stat-details">
+            <h3>{stats.total_blogs}</h3>
+            <span>Total Blogs</span>
           </div>
         </div>
 
-        <div className="stat-card gradient-saffron" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
-          <div className="stat-icon-wrapper" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', color: 'white' }}><Calendar size={24} /></div>
-          <div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', margin: '0', color: 'white' }}>{stats.total_timeline}</h3>
-            <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.85)' }}>Timeline Events</span>
+        <div className="stat-card gradient-saffron">
+          <div className="stat-icon-wrapper"><Calendar size={22} /></div>
+          <div className="stat-details">
+            <h3>{stats.total_timeline}</h3>
+            <span>Timeline Events</span>
           </div>
         </div>
 
-        <div className="stat-card gradient-pink" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
-          <div className="stat-icon-wrapper" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', color: 'white' }}><Compass size={24} /></div>
-          <div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', margin: '0', color: 'white' }}>{stats.total_news}</h3>
-            <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.85)' }}>News Articles</span>
+        <div className="stat-card gradient-pink">
+          <div className="stat-icon-wrapper"><Compass size={22} /></div>
+          <div className="stat-details">
+            <h3>{stats.total_news}</h3>
+            <span>News Articles</span>
           </div>
         </div>
       </div>
 
-      <div className="grid-2" style={{ gap: '24px' }}>
-        <div className="stat-card gradient-purple" style={{ padding: '24px', display: 'flex', gap: '16px', borderRadius: '16px' }}>
-          <div className="stat-icon-wrapper" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', color: 'white', height: 'fit-content' }}><Mail size={24} /></div>
-          <div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', margin: '0', color: 'white' }}>{stats.unread_messages}</h3>
-            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'white' }}>Unread Messages</span>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.85)', marginTop: '8px' }}>Inbox messages submitted via contact form that require review and response.</p>
+      <div className="overview-info-grid">
+        <div className="stat-card gradient-purple info-card">
+          <div className="stat-icon-wrapper"><Mail size={22} /></div>
+          <div className="stat-details">
+            <h3>{stats.unread_messages}</h3>
+            <span className="info-title">Unread Messages</span>
+            <p>Inbox messages submitted via contact form that require review and response.</p>
           </div>
         </div>
 
-        <div className="stat-card gradient-blue" style={{ padding: '24px', display: 'flex', gap: '16px', borderRadius: '16px' }}>
-          <div className="stat-icon-wrapper" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', color: 'white', height: 'fit-content' }}><MessageSquare size={24} /></div>
-          <div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', margin: '0', color: 'white' }}>{stats.pending_comments}</h3>
-            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'white' }}>Pending Comments</span>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.85)', marginTop: '8px' }}>Comments posted on blog articles awaiting approval prior to public rendering.</p>
+        <div className="stat-card gradient-blue info-card">
+          <div className="stat-icon-wrapper"><MessageSquare size={22} /></div>
+          <div className="stat-details">
+            <h3>{stats.pending_comments}</h3>
+            <span className="info-title">Pending Comments</span>
+            <p>Comments posted on blog articles awaiting approval prior to public rendering.</p>
           </div>
         </div>
       </div>
@@ -840,7 +842,7 @@ function GalleryManager({ token, onUpdate }: { token: string | null, onUpdate: (
     <div className="gallery-manager animate-fade-in">
       <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '24px' }}>Manage Gallery</h2>
 
-      <div className="grid-2" style={{ alignItems: 'start', gap: '32px', gridTemplateColumns: '320px 1fr' }}>
+      <div className="grid-2 gallery-manager-grid" style={{ alignItems: 'start', gap: '24px' }}>
         <div className="upload-form glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}><Upload size={18} style={{ display: 'inline', marginRight: '8px' }} /> Upload Photos</h3>
           <form onSubmit={handleSubmit} className="dash-form">
@@ -1313,65 +1315,63 @@ function NotificationsPanel({
       </div>
 
       {/* ─── Push Notification Diagnostics Card ─── */}
-      <div className="glass-card" style={{ padding: '20px', marginBottom: '24px', borderLeft: '4px solid #f97316' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Bell size={18} style={{ color: '#f97316' }} /> Background Push Notification Diagnostics
+      <div className="glass-card fcm-diag-card">
+        <div className="fcm-diag-header">
+          <div className="fcm-diag-title-area">
+            <h3 className="fcm-diag-title">
+              <Bell size={18} style={{ color: '#f97316' }} /> Background Push Diagnostics
             </h3>
-            <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8 }}>
+            <p className="fcm-diag-desc">
               Verify FCM device registration and test background delivery when app is closed.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="fcm-diag-actions">
             <button 
               onClick={handleSyncToken}
-              className="btn btn-outline btn-sm"
+              className="btn btn-outline btn-sm sync-token-btn"
               title="Re-register this device's token with the server"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <RefreshCw size={14} /> Sync Device Token
+              <RefreshCw size={14} /> <span>Sync Token</span>
             </button>
             <button 
               onClick={handleSendTestPush}
               disabled={testPushLoading}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              className="btn btn-primary btn-sm test-push-btn"
             >
-              <Bell size={14} /> {testPushLoading ? 'Sending...' : 'Send Test Push'}
+              <Bell size={14} /> <span>{testPushLoading ? 'Sending...' : 'Test Push'}</span>
             </button>
           </div>
         </div>
 
         {diagMessage && (
-          <div style={{ padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.06)' }}>
+          <div className="fcm-diag-alert">
             {diagMessage}
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', fontSize: '0.88rem' }}>
-          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
-            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Device Token (Local)</div>
-            <div style={{ fontWeight: '600', marginTop: '2px', wordBreak: 'break-all' }}>
-              {getLocalFCMToken() ? `✅ Registered (${getLocalFCMToken()?.slice(0, 16)}...)` : '⚠️ None (Android App Only)'}
+        <div className="fcm-diag-grid">
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Device Token (Local)</div>
+            <div className="fcm-diag-box-val">
+              {getLocalFCMToken() ? `✅ Registered (${getLocalFCMToken()?.slice(0, 14)}...)` : '⚠️ None (Android App Only)'}
             </div>
           </div>
-          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
-            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Server Registered Tokens</div>
-            <div style={{ fontWeight: '600', marginTop: '2px' }}>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Server Registered Tokens</div>
+            <div className="fcm-diag-box-val">
               {fcmLoading ? 'Checking...' : fcmStatus ? `${fcmStatus.fcm_tokens_registered} device(s) in DB` : 'Unknown'}
             </div>
           </div>
-          <div style={{ padding: '10px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
-            <div style={{ opacity: 0.7, fontSize: '0.78rem' }}>Service Account File</div>
-            <div style={{ fontWeight: '600', marginTop: '2px' }}>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Service Account File</div>
+            <div className="fcm-diag-box-val">
               {fcmLoading ? 'Checking...' : fcmStatus?.firebase_service_account_found ? '✅ Detected on Server' : '❌ Not Found (Upload to api/)'}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="notifications-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="notifications-list">
         {loading ? (
           <div className="glass-card text-center" style={{ padding: '40px' }}>Loading notifications...</div>
         ) : notifications.length === 0 ? (
@@ -1380,71 +1380,52 @@ function NotificationsPanel({
           notifications.map((n) => (
             <div 
               key={n.id} 
-              className="notification-item glass-card" 
-              style={{ 
-                padding: '20px', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                borderLeft: n.is_read ? '1px solid var(--border-color)' : '4px solid var(--saffron)',
-                background: n.is_read ? 'var(--bg-card)' : 'rgba(245, 158, 11, 0.04)'
-              }}
+              className={`notification-item glass-card ${n.is_read ? 'read' : 'unread'}`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1', marginRight: '24px' }}>
-                <div style={{ 
-                  padding: '10px', 
-                  borderRadius: '50%', 
-                  background: n.type === 'like' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  color: n.type === 'like' ? 'var(--saffron)' : '#10b981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+              <div className="notif-content">
+                <div className={`notif-icon-circle ${n.type === 'like' ? 'like' : 'comment'}`}>
                   {n.type === 'like' ? <ThumbsUp size={18} /> : <MessageSquare size={18} />}
                 </div>
-                <div>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', margin: '0 0 4px', fontWeight: n.is_read ? 'normal' : '600' }}>
+                <div className="notif-body">
+                  <p className="notif-message">
                     {n.message}
                   </p>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <div className="notif-meta">
+                    <span className="notif-date">
                       {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                     {n.post && (
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Post: <strong style={{ color: 'var(--saffron)' }}>{n.post.title}</strong>
+                      <span className="notif-post">
+                        Post: <strong>{n.post.title}</strong>
                       </span>
                     )}
                   </div>
                 </div>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="notif-actions">
                 {n.type === 'comment' && (
                   <button 
                     onClick={() => setActiveTab('comments')} 
-                    className="btn btn-saffron btn-sm" 
-                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    className="btn btn-saffron btn-sm notif-btn"
                   >
-                    Go to Comments
+                    Comments
                   </button>
                 )}
                 {!n.is_read && (
                   <button 
                     onClick={() => handleMarkRead(n.id)} 
-                    className="btn btn-outline btn-sm" 
-                    style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                    className="btn btn-outline btn-sm notif-btn"
                   >
                     Mark Read
                   </button>
                 )}
                 <button 
                   onClick={() => handleDelete(n.id)} 
-                  className="btn btn-outline btn-sm text-red" 
-                  style={{ padding: '6px', minWidth: '32px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                  className="btn-icon text-red notif-delete-btn" 
                   title="Delete Notification"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>
