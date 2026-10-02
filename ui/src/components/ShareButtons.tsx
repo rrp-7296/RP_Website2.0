@@ -7,11 +7,55 @@ interface ShareButtonsProps {
   className?: string;
 }
 
+const PUBLIC_DOMAIN = 'https://rakeshwarpandey.com';
+
+function getCanonicalShareUrl(providedUrl?: string): string {
+  if (providedUrl) {
+    if (
+      providedUrl.startsWith('http://localhost') ||
+      providedUrl.startsWith('https://localhost') ||
+      providedUrl.startsWith('http://127.0.0.1') ||
+      providedUrl.startsWith('capacitor://') ||
+      providedUrl.startsWith('file://')
+    ) {
+      try {
+        const parsed = new URL(providedUrl);
+        const path = parsed.pathname === '/' ? '' : parsed.pathname;
+        return `${PUBLIC_DOMAIN}${path}${parsed.search}${parsed.hash}`;
+      } catch {
+        return `${PUBLIC_DOMAIN}/`;
+      }
+    }
+    if (providedUrl.startsWith('/')) {
+      return `${PUBLIC_DOMAIN}${providedUrl}`;
+    }
+    return providedUrl;
+  }
+
+  if (typeof window !== 'undefined') {
+    const href = window.location.href;
+    if (
+      href.includes('localhost') ||
+      href.includes('127.0.0.1') ||
+      href.startsWith('capacitor://') ||
+      href.startsWith('file://')
+    ) {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      const pathname = window.location.pathname === '/' ? '' : window.location.pathname;
+      return `${PUBLIC_DOMAIN}${pathname}${search}${hash}`;
+    }
+    return href;
+  }
+
+  return `${PUBLIC_DOMAIN}/`;
+}
+
 export default function ShareButtons({ title, url, className = '' }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const shareUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
+  const shareUrl = getCanonicalShareUrl(url);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

@@ -233,7 +233,10 @@ export default function NewsList() {
               )}
 
               <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <ShareButtons title={selectedItem.title} />
+                <ShareButtons 
+                  title={selectedItem.title} 
+                  url="https://rakeshwarpandey.com/#/news"
+                />
               </div>
             </div>
           </div>

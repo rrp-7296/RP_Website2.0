@@ -187,7 +187,10 @@ export default function TimelineList() {
                     <p className="timeline-panel-text" style={{ marginBottom: '16px' }}>{event.text}</p>
                     
                     <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }} onClick={(e) => e.stopPropagation()}>
-                      <ShareButtons title={`Journey Timeline: ${event.text.substring(0, 60)}...`} />
+                      <ShareButtons 
+                        title={`Journey Timeline: ${event.text.substring(0, 60)}...`} 
+                        url="https://rakeshwarpandey.com/#/timeline"
+                      />
                     </div>
                   </div>
                 </div>
@@ -215,7 +218,10 @@ export default function TimelineList() {
               </p>
 
               <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <ShareButtons title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} />
+                <ShareButtons 
+                  title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} 
+                  url="https://rakeshwarpandey.com/#/timeline"
+                />
               </div>
             </div>
           </div>

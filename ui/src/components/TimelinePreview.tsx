@@ -145,7 +145,10 @@ export default function TimelinePreview() {
               </p>
 
               <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <ShareButtons title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} />
+                <ShareButtons 
+                  title={`Journey Timeline: ${selectedItem.text.substring(0, 60)}...`} 
+                  url="https://rakeshwarpandey.com/#/timeline"
+                />
               </div>
             </div>
           </div>
