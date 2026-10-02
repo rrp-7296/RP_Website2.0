@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, AlertCircle, Shield, Home, ArrowLeft } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { apiUrl } from '../../config/api';
-
+import { adminAuth } from '../../services/adminAuth';
+import { useVisitor } from '../../context/VisitorContext';
 import { initAdminPushNotifications } from '../../services/adminPushNotifications';
 
 export default function AdminLogin() {
@@ -12,6 +13,17 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { syncAdminAsVisitor } = useVisitor();
+
+  // If already logged in, seamlessly redirect to dashboard without showing login form
+  useEffect(() => {
+    (async () => {
+      const token = await adminAuth.getToken();
+      if (token) {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    })();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,9 +44,14 @@ export default function AdminLogin() {
       }
 
       if (response.ok) {
-        localStorage.setItem('admin_token', data.access_token);
+        await adminAuth.setToken(data.access_token, data.user);
+        syncAdminAsVisitor({
+          name: data.user?.display_name || 'Rakeshwar Pandey',
+          email: data.user?.email || 'rakeshwarpandey@gmail.com',
+          is_subscribed: true
+        });
         initAdminPushNotifications();
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
         setError(data.error || data.detail || 'Invalid username or password. Please try again.');
       }

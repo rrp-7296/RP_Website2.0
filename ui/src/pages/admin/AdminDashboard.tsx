@@ -8,6 +8,7 @@ import {
   Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp, Wrench
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
+import { adminAuth } from '../../services/adminAuth';
 import { initAdminPushNotifications, stopAdminPushNotifications, getLocalFCMToken, submitFCMTokenToServer } from '../../services/adminPushNotifications';
 
 type Tab = 'overview' | 'analytics' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers' | 'diagnostics';
@@ -72,39 +73,52 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const token = localStorage.getItem('admin_token');
+  const token = adminAuth.getTokenSync();
 
   // Verify Auth on Load
   useEffect(() => {
-    if (!token) {
-      stopAdminPushNotifications();
-      navigate('/admin');
-      return;
-    }
-
-    initAdminPushNotifications();
-
-    fetch(apiUrl('/auth/me'), {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => {
-      if (!res.ok) {
+    (async () => {
+      const activeToken = await adminAuth.getToken();
+      if (!activeToken) {
         stopAdminPushNotifications();
-        localStorage.removeItem('admin_token');
         navigate('/admin');
+        return;
       }
-    })
-    .catch(() => {
-      // Allow demo environment fallback if server not running
-    });
 
-    fetchStats();
-  }, [token, navigate]);
+      initAdminPushNotifications();
+
+      fetch(apiUrl('/auth/me'), {
+        headers: { 'Authorization': `Bearer ${activeToken}` }
+      })
+      .then(async (res) => {
+        if (!res.ok) {
+          stopAdminPushNotifications();
+          await adminAuth.clearToken();
+          navigate('/admin');
+        } else {
+          try {
+            const data = await res.json();
+            if (data?.refreshed_token) {
+              await adminAuth.setToken(data.refreshed_token, data);
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      })
+      .catch(() => {
+        // Allow demo environment fallback if server not running
+      });
+
+      fetchStats();
+    })();
+  }, [navigate]);
 
   const fetchStats = async () => {
     try {
+      const activeToken = await adminAuth.getToken();
       const res = await fetch(apiUrl('/admin/stats'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${activeToken}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -121,9 +135,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     stopAdminPushNotifications();
-    localStorage.removeItem('admin_token');
+    await adminAuth.clearToken();
     navigate('/admin');
   };
 

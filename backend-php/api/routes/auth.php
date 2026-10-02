@@ -29,6 +29,12 @@ if ($method === 'POST' && $path === '/auth/login') {
         'access_token' => $token,
         'token_type'   => 'bearer',
         'expires_in'   => JWT_EXPIRY_MINUTES * 60,
+        'user'         => [
+            'id'           => $user['id'],
+            'username'     => $user['username'],
+            'display_name' => $user['display_name'] ?: 'Rakeshwar Pandey',
+            'email'        => $user['email'] ?: 'rakeshwarpandey@gmail.com',
+        ],
     ]);
 }
 
@@ -44,7 +50,11 @@ if ($method === 'GET' && $path === '/auth/me') {
         json_error('User not found', 404);
     }
 
-    json_success($user);
+    $refreshedToken = create_token($user['username']);
+    $response = $user;
+    $response['refreshed_token'] = $refreshedToken;
+
+    json_success($response);
 }
 
 // POST /auth/change-password

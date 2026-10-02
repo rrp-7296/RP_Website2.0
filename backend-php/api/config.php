@@ -22,7 +22,7 @@ define('DB_CHARSET', 'utf8mb4');
 // Generate with: php -r "echo bin2hex(random_bytes(32));"
 define('JWT_SECRET', 'change-this-to-a-very-long-random-secret-key-64-chars-min');
 define('JWT_ALGORITHM', 'HS256');
-define('JWT_EXPIRY_MINUTES', 1440); // 24 hours
+define('JWT_EXPIRY_MINUTES', 525600); // 365 days (1 year) persistent login
 
 // ─── File Uploads ──────────────────────────────────────────────────────────
 // Absolute path to the uploads directory on the server
@@ -49,7 +49,7 @@ define('SMTP_PASS', 'your-app-password');
 define('CONTACT_NOTIFY_EMAIL', 'rakeshwarpandey@gmail.com');
 
 // ─── App ───────────────────────────────────────────────────────────────────
-define('APP_NAME', 'Rakeshwar Pandey Portfolio');
+define('APP_NAME', 'Rakeshwar Pandey');
 define('APP_VERSION', '2.0.0');
 define('APP_URL', 'https://rakeshwarpandey.com');
 define('DEBUG', true); // Set to true for initial deployment troubleshooting

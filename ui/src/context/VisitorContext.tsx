@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { apiUrl } from '../config/api';
 import { analytics } from '../services/analyticsTracker';
+import { adminAuth } from '../services/adminAuth';
 
 export interface VisitorProfile {
   name: string;
@@ -14,6 +15,7 @@ interface VisitorContextType {
   visitor: VisitorProfile | null;
   saveVisitor: (profile: VisitorProfile) => void;
   clearVisitor: () => void;
+  syncAdminAsVisitor: (adminProfile?: VisitorProfile) => void;
   requireVisitor: (onSuccess?: (profile: VisitorProfile) => void) => void;
   isModalOpen: boolean;
   openModal: () => void;
@@ -40,36 +42,72 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
     return path.startsWith('/admin') || hash.includes('/admin');
   };
 
-  // Initialize from localStorage on boot
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(VISITOR_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as VisitorProfile;
-        if (parsed && parsed.name) {
-          setVisitor(parsed);
-          // Trigger welcome toast for returning visitor if not on admin route
-          if (!isAdminRoute()) {
-            triggerWelcomeToast(parsed.name);
-          }
-          return;
+  const syncAdminAsVisitor = (adminProfile?: VisitorProfile) => {
+    let name = adminProfile?.name || 'Rakeshwar Pandey';
+    let email = adminProfile?.email || 'rakeshwarpandey@gmail.com';
+
+    if (!adminProfile) {
+      try {
+        const storedUser = localStorage.getItem('admin_user_profile');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          if (parsed.display_name) name = parsed.display_name;
+          if (parsed.email) email = parsed.email;
         }
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    const profile: VisitorProfile = {
+      name,
+      email,
+      is_subscribed: true
+    };
+
+    setVisitor(profile);
+    localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify(profile));
+    localStorage.setItem(VISITOR_PROMPT_KEY, 'true');
+    analytics.setVisitorName(profile.name);
+  };
+
+  // Initialize on boot: if admin token is present, admin becomes visitor across entire app
+  useEffect(() => {
+    (async () => {
+      const token = await adminAuth.initSession();
+      if (token) {
+        syncAdminAsVisitor();
+        return;
       }
 
-      // If no visitor profile exists and prompt has not been shown yet, prompt after 2.5s (except on admin page)
-      const promptShown = localStorage.getItem(VISITOR_PROMPT_KEY);
-      if (!promptShown && !isAdminRoute()) {
-        const timer = setTimeout(() => {
-          if (!isAdminRoute()) {
-            setIsModalOpen(true);
-            localStorage.setItem(VISITOR_PROMPT_KEY, 'true');
+      try {
+        const stored = localStorage.getItem(VISITOR_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as VisitorProfile;
+          if (parsed && parsed.name) {
+            setVisitor(parsed);
+            if (!isAdminRoute()) {
+              triggerWelcomeToast(parsed.name);
+            }
+            return;
           }
-        }, 2500);
-        return () => clearTimeout(timer);
+        }
+
+        // If no visitor profile exists and prompt has not been shown yet, prompt after 2.5s (except on admin page)
+        const promptShown = localStorage.getItem(VISITOR_PROMPT_KEY);
+        if (!promptShown && !isAdminRoute()) {
+          const timer = setTimeout(() => {
+            if (!isAdminRoute()) {
+              setIsModalOpen(true);
+              localStorage.setItem(VISITOR_PROMPT_KEY, 'true');
+            }
+          }, 2500);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {
+        console.error('Failed to parse visitor profile from localStorage', e);
       }
-    } catch (e) {
-      console.error('Failed to parse visitor profile from localStorage', e);
-    }
+    })();
   }, []);
 
   const triggerWelcomeToast = (name: string, isReturning: boolean = true) => {
@@ -154,6 +192,7 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
         visitor,
         saveVisitor,
         clearVisitor,
+        syncAdminAsVisitor,
         requireVisitor,
         isModalOpen,
         openModal,

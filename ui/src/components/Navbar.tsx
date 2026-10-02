@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Shield, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useVisitor } from '../context/VisitorContext';
+import { adminAuth } from '../services/adminAuth';
 
 // Ashoka Chakra SVG (24 spokes)
 function AshokaSVG({ size = 24, className = '' }) {
@@ -121,8 +122,13 @@ export default function Navbar() {
               <span>{visitor ? `Hi, ${visitor.name.split(' ')[0]}` : 'Visitor'}</span>
             </button>
 
-            <Link to="/admin" className="admin-link-icon" title="Admin Panel" aria-label="Admin Panel">
-              <Shield size={16} />
+            <Link 
+              to={adminAuth.isLoggedIn() ? '/admin/dashboard' : '/admin'} 
+              className="admin-link-icon" 
+              title={adminAuth.isLoggedIn() ? 'Admin Dashboard' : 'Admin Panel'} 
+              aria-label="Admin Panel"
+            >
+              <Shield size={16} style={{ color: adminAuth.isLoggedIn() ? '#FF9933' : undefined }} />
             </Link>
           </div>
 
@@ -172,11 +178,11 @@ export default function Navbar() {
             <User size={16} /> {visitor ? `Profile (${visitor.name})` : 'Visitor Login'}
           </button>
           <Link
-            to="/admin"
+            to={adminAuth.isLoggedIn() ? '/admin/dashboard' : '/admin'}
             onClick={() => setIsOpen(false)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', color: adminAuth.isLoggedIn() ? '#FF9933' : undefined }}
           >
-            <Shield size={16} /> Admin Panel
+            <Shield size={16} /> {adminAuth.isLoggedIn() ? 'Admin Dashboard' : 'Admin Panel'}
           </Link>
           <div className="nav-mobile-theme-row">
             <span>Toggle Theme:</span>
