@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
   Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
-  Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp
+  Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp, Wrench
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { initAdminPushNotifications, stopAdminPushNotifications, getLocalFCMToken, submitFCMTokenToServer } from '../../services/adminPushNotifications';
 
-type Tab = 'overview' | 'analytics' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
+type Tab = 'overview' | 'analytics' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers' | 'diagnostics';
 
 const tabLabels: Record<Tab, string> = {
   overview: 'Overview',
@@ -22,7 +22,8 @@ const tabLabels: Record<Tab, string> = {
   messages: 'Messages',
   comments: 'Comments',
   notifications: 'Notifications',
-  subscribers: 'Subscribers'
+  subscribers: 'Subscribers',
+  diagnostics: 'Diagnostics'
 };
 
 interface Stats {
@@ -251,6 +252,12 @@ export default function AdminDashboard() {
                 {stats.total_subscribers > 0 && <span className="badge green-bg">{stats.total_subscribers}</span>}
               </button>
             </li>
+            <li>
+              <button onClick={() => handleTabClick('diagnostics')} className={`dash-nav-btn ${activeTab === 'diagnostics' ? 'active' : ''}`}>
+                <Wrench size={18} /> 
+                <span>Diagnostics</span>
+              </button>
+            </li>
           </ul>
         </aside>
 
@@ -281,6 +288,7 @@ export default function AdminDashboard() {
           {activeTab === 'comments' && <CommentsApproval token={token} onUpdate={fetchStats} />}
           {activeTab === 'notifications' && <NotificationsPanel token={token} onUpdate={fetchStats} setActiveTab={setActiveTab} />}
           {activeTab === 'subscribers' && <SubscribersManager token={token} onUpdate={fetchStats} />}
+          {activeTab === 'diagnostics' && <DiagnosticsPanel token={token} />}
         </main>
       </div>
     </div>
@@ -352,6 +360,13 @@ function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: 
       subtitle: `${stats.total_subscribers} Audience`,
       gradientClass: 'gradient-emerald',
       icon: Users
+    },
+    {
+      id: 'diagnostics' as Tab,
+      title: 'Diagnostics',
+      subtitle: 'FCM & System Status',
+      gradientClass: 'gradient-slate',
+      icon: Wrench
     }
   ];
 
@@ -1277,69 +1292,10 @@ function NotificationsPanel({
 }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fcmStatus, setFcmStatus] = useState<any>(null);
-  const [fcmLoading, setFcmLoading] = useState(false);
-  const [testPushLoading, setTestPushLoading] = useState(false);
-  const [diagMessage, setDiagMessage] = useState<string | null>(null);
-
-  const fetchFcmStatus = async () => {
-    setFcmLoading(true);
-    try {
-      const res = await fetch(apiUrl('/admin/notifications/fcm-status'), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setFcmStatus(data);
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      setFcmLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchNotifications();
-    fetchFcmStatus();
   }, []);
-
-  const handleSyncToken = async () => {
-    const curToken = getLocalFCMToken();
-    if (!curToken) {
-      setDiagMessage('⚠️ No local FCM token stored on this device yet. Open the native Android app while logged in.');
-      return;
-    }
-    const res = await submitFCMTokenToServer(curToken, token || undefined);
-    if (res.ok) {
-      setDiagMessage('✅ Device FCM token registered successfully with server!');
-      fetchFcmStatus();
-    } else {
-      setDiagMessage(`❌ Token submission failed: ${res.error || res.status}`);
-    }
-  };
-
-  const handleSendTestPush = async () => {
-    setTestPushLoading(true);
-    setDiagMessage(null);
-    try {
-      const res = await fetch(apiUrl('/admin/notifications/test-push'), {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setDiagMessage('🚀 Test push dispatched! Close or minimize the app to verify background delivery.');
-        fetchFcmStatus();
-      } else {
-        setDiagMessage(`❌ Test push failed: ${data?.detail || res.status}`);
-      }
-    } catch (err: any) {
-      setDiagMessage(`❌ Network error: ${err?.message}`);
-    } finally {
-      setTestPushLoading(false);
-    }
-  };
 
   const fetchNotifications = async () => {
     try {
@@ -1413,63 +1369,6 @@ function NotificationsPanel({
             <Check size={16} /> Mark All Read
           </button>
         )}
-      </div>
-
-      {/* ─── Push Notification Diagnostics Card ─── */}
-      <div className="glass-card fcm-diag-card">
-        <div className="fcm-diag-header">
-          <div className="fcm-diag-title-area">
-            <h3 className="fcm-diag-title">
-              <Bell size={18} style={{ color: '#f97316' }} /> Background Push Diagnostics
-            </h3>
-            <p className="fcm-diag-desc">
-              Verify FCM device registration and test background delivery when app is closed.
-            </p>
-          </div>
-          <div className="fcm-diag-actions">
-            <button 
-              onClick={handleSyncToken}
-              className="btn btn-outline btn-sm sync-token-btn"
-              title="Re-register this device's token with the server"
-            >
-              <RefreshCw size={14} /> <span>Sync Token</span>
-            </button>
-            <button 
-              onClick={handleSendTestPush}
-              disabled={testPushLoading}
-              className="btn btn-primary btn-sm test-push-btn"
-            >
-              <Bell size={14} /> <span>{testPushLoading ? 'Sending...' : 'Test Push'}</span>
-            </button>
-          </div>
-        </div>
-
-        {diagMessage && (
-          <div className="fcm-diag-alert">
-            {diagMessage}
-          </div>
-        )}
-
-        <div className="fcm-diag-grid">
-          <div className="fcm-diag-box">
-            <div className="fcm-diag-box-label">Device Token (Local)</div>
-            <div className="fcm-diag-box-val">
-              {getLocalFCMToken() ? `✅ Registered (${getLocalFCMToken()?.slice(0, 14)}...)` : '⚠️ None (Android App Only)'}
-            </div>
-          </div>
-          <div className="fcm-diag-box">
-            <div className="fcm-diag-box-label">Server Registered Tokens</div>
-            <div className="fcm-diag-box-val">
-              {fcmLoading ? 'Checking...' : fcmStatus ? `${fcmStatus.fcm_tokens_registered} device(s) in DB` : 'Unknown'}
-            </div>
-          </div>
-          <div className="fcm-diag-box">
-            <div className="fcm-diag-box-label">Service Account File</div>
-            <div className="fcm-diag-box-val">
-              {fcmLoading ? 'Checking...' : fcmStatus?.firebase_service_account_found ? '✅ Detected on Server' : '❌ Not Found (Upload to api/)'}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="notifications-list">
@@ -2036,3 +1935,205 @@ function AnalyticsPanel({ token }: { token: string | null }) {
     </div>
   );
 }
+
+// ─── DIAGNOSTICS PANEL (FCM & SYSTEM DIAGNOSTICS) ─────────────────────
+
+function DiagnosticsPanel({ token }: { token: string | null }) {
+  const [fcmStatus, setFcmStatus] = useState<any>(null);
+  const [fcmLoading, setFcmLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
+  const [diagMessage, setDiagMessage] = useState<string | null>(null);
+  const [systemHealth, setSystemHealth] = useState<{ status: string; version: string } | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const fetchFcmStatus = async () => {
+    setFcmLoading(true);
+    try {
+      const res = await fetch(apiUrl('/admin/notifications/fcm-status'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFcmStatus(data);
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setFcmLoading(false);
+    }
+  };
+
+  const checkHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const res = await fetch(apiUrl('/health'));
+      if (res.ok) {
+        const data = await res.json();
+        setSystemHealth(data);
+      }
+    } catch (e) {
+      setSystemHealth(null);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFcmStatus();
+    checkHealth();
+  }, []);
+
+  const handleSyncToken = async () => {
+    const curToken = getLocalFCMToken();
+    if (!curToken) {
+      setDiagMessage('⚠️ No local FCM token stored on this device yet. Open the native Android app while logged in.');
+      return;
+    }
+    const res = await submitFCMTokenToServer(curToken, token || undefined);
+    if (res.ok) {
+      setDiagMessage('✅ Device FCM token registered successfully with server!');
+      fetchFcmStatus();
+    } else {
+      setDiagMessage(`❌ Token submission failed: ${res.error || res.status}`);
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setTestPushLoading(true);
+    setDiagMessage(null);
+    try {
+      const res = await fetch(apiUrl('/admin/notifications/test-push'), {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDiagMessage('🚀 Test push dispatched! Close or minimize the app to verify background delivery.');
+        fetchFcmStatus();
+      } else {
+        setDiagMessage(`❌ Test push failed: ${data?.detail || res.status}`);
+      }
+    } catch (err: any) {
+      setDiagMessage(`❌ Network error: ${err?.message}`);
+    } finally {
+      setTestPushLoading(false);
+    }
+  };
+
+  return (
+    <div className="diagnostics-panel animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header */}
+      <div className="glass-card" style={{ padding: '20px 24px' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: '700', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Wrench className="saffron" size={24} />
+          System & Background Diagnostics
+        </h2>
+        <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+          Verify FCM push notification infrastructure, device registration, and backend service status.
+        </p>
+      </div>
+
+      {/* ─── Push Notification Diagnostics Card ─── */}
+      <div className="glass-card fcm-diag-card">
+        <div className="fcm-diag-header">
+          <div className="fcm-diag-title-area">
+            <h3 className="fcm-diag-title">
+              <Bell size={18} style={{ color: '#f97316' }} /> Background Push Diagnostics
+            </h3>
+            <p className="fcm-diag-desc">
+              Verify FCM device registration and test background delivery when app is closed.
+            </p>
+          </div>
+          <div className="fcm-diag-actions">
+            <button 
+              onClick={handleSyncToken}
+              className="btn btn-outline btn-sm sync-token-btn"
+              title="Re-register this device's token with the server"
+            >
+              <RefreshCw size={14} /> <span>Sync Token</span>
+            </button>
+            <button 
+              onClick={handleSendTestPush}
+              disabled={testPushLoading}
+              className="btn btn-primary btn-sm test-push-btn"
+            >
+              <Bell size={14} /> <span>{testPushLoading ? 'Sending...' : 'Test Push'}</span>
+            </button>
+          </div>
+        </div>
+
+        {diagMessage && (
+          <div className="fcm-diag-alert">
+            {diagMessage}
+          </div>
+        )}
+
+        <div className="fcm-diag-grid">
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Device Token (Local)</div>
+            <div className="fcm-diag-box-val">
+              {getLocalFCMToken() ? `✅ Registered (${getLocalFCMToken()?.slice(0, 14)}...)` : '⚠️ None (Android App Only)'}
+            </div>
+          </div>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Server Registered Tokens</div>
+            <div className="fcm-diag-box-val">
+              {fcmLoading ? 'Checking...' : fcmStatus ? `${fcmStatus.fcm_tokens_registered} device(s) in DB` : 'Unknown'}
+            </div>
+          </div>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Service Account File</div>
+            <div className="fcm-diag-box-val">
+              {fcmLoading ? 'Checking...' : fcmStatus?.firebase_service_account_found ? '✅ Detected on Server' : '❌ Not Found (Upload to api/)'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Backend & Environment Diagnostics Card ─── */}
+      <div className="glass-card" style={{ padding: '22px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', margin: '0 0 4px 0' }}>
+              Backend & Platform Environment
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Live connection status to the backend API services.
+            </p>
+          </div>
+          <button 
+            onClick={checkHealth}
+            disabled={healthLoading}
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RefreshCw size={14} className={healthLoading ? 'spin' : ''} />
+            <span>Check API</span>
+          </button>
+        </div>
+
+        <div className="fcm-diag-grid">
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">API Health</div>
+            <div className="fcm-diag-box-val">
+              {healthLoading ? 'Checking...' : systemHealth?.status === 'healthy' ? '✅ Online (Healthy)' : '⚠️ Unreachable'}
+            </div>
+          </div>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Backend Version</div>
+            <div className="fcm-diag-box-val">
+              {systemHealth?.version ? `v${systemHealth.version}` : '—'}
+            </div>
+          </div>
+          <div className="fcm-diag-box">
+            <div className="fcm-diag-box-label">Client Platform</div>
+            <div className="fcm-diag-box-val">
+              {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.() ? 'Android / Native App' : 'Web Browser'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
