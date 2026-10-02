@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, AlertCircle, Shield } from 'lucide-react';
+import { Lock, User, AlertCircle, Shield, Home, ArrowLeft } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { apiUrl } from '../../config/api';
 
@@ -48,6 +48,16 @@ export default function AdminLogin() {
   return (
     <div className="admin-login-page">
       <div className="admin-login-card">
+        <button 
+          type="button"
+          onClick={() => navigate('/')} 
+          className="login-home-btn"
+          title="Return to Website Home"
+          aria-label="Return to Website Home"
+        >
+          <ArrowLeft size={16} />
+          <span>Home</span>
+        </button>
         <ThemeToggle style={{ position: 'absolute', top: '16px', right: '16px' }} />
         <div className="login-header text-center" style={{ marginBottom: '32px' }}>
           <div className="admin-badge-circle saffron">
@@ -105,6 +115,31 @@ export default function AdminLogin() {
             {loading ? 'Logging in...' : 'Access Dashboard'}
           </button>
         </form>
+
+        <div className="login-footer-nav" style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="login-footer-home-link"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--saffron)',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              transition: 'var(--transition)'
+            }}
+          >
+            <Home size={16} />
+            <span>Return to Public Website</span>
+          </button>
+        </div>
       </div>
     </div>
   );

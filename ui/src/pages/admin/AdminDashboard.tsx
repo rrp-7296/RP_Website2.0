@@ -5,12 +5,24 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
   Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
-  Bell, Menu, X, Users, RefreshCw
+  Bell, Menu, X, Users, RefreshCw, ArrowLeft
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { initAdminPushNotifications, stopAdminPushNotifications, getLocalFCMToken, submitFCMTokenToServer } from '../../services/adminPushNotifications';
 
 type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
+
+const tabLabels: Record<Tab, string> = {
+  overview: 'Overview',
+  blogs: 'Manage Blogs',
+  timeline: 'Manage Timeline',
+  news: 'Manage News',
+  gallery: 'Manage Gallery',
+  messages: 'Messages',
+  comments: 'Comments',
+  notifications: 'Notifications',
+  subscribers: 'Subscribers'
+};
 
 interface Stats {
   total_blogs: number;
@@ -121,6 +133,16 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="admin-dash-header glass-card">
         <div className="admin-dash-title-group">
+          {activeTab !== 'overview' && (
+            <button 
+              onClick={() => handleTabClick('overview')} 
+              className="mobile-hub-back-icon-btn btn-icon"
+              title="Back to All Menus"
+              aria-label="Back to All Menus"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
             className="mobile-menu-toggle btn-icon"
@@ -132,9 +154,18 @@ export default function AdminDashboard() {
           <div className="admin-header-shield">
             <Shield className="saffron" size={26} />
           </div>
-          <div className="admin-header-text">
-            <h1 className="admin-dash-title">Admin Dashboard</h1>
-            <span className="admin-dash-sub">Welcome, Administrator</span>
+          <div 
+            className="admin-header-text"
+            style={{ cursor: activeTab !== 'overview' ? 'pointer' : 'default' }}
+            onClick={() => activeTab !== 'overview' && handleTabClick('overview')}
+            title={activeTab !== 'overview' ? 'Click to return to Admin Menu Hub' : undefined}
+          >
+            <h1 className="admin-dash-title">
+              {activeTab === 'overview' ? 'Admin Dashboard' : tabLabels[activeTab]}
+            </h1>
+            <span className="admin-dash-sub">
+              {activeTab === 'overview' ? 'Welcome, Administrator' : '← Return to Menu Hub'}
+            </span>
           </div>
         </div>
         <div className="admin-dash-actions">
@@ -215,7 +246,22 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <main className="dashboard-content-panel">
-          {activeTab === 'overview' && <OverviewTab stats={stats} />}
+          {activeTab !== 'overview' && (
+            <div className="mobile-subtab-banner">
+              <button 
+                onClick={() => handleTabClick('overview')}
+                className="mobile-subtab-return-btn"
+                title="Return to Menu Hub"
+                aria-label="Return to Menu Hub"
+              >
+                <ArrowLeft size={15} />
+                <span>All Menus</span>
+              </button>
+              <span className="mobile-subtab-current-badge">{tabLabels[activeTab]}</span>
+            </div>
+          )}
+
+          {activeTab === 'overview' && <OverviewTab stats={stats} onTabSelect={handleTabClick} />}
           {activeTab === 'blogs' && <BlogsManager token={token} onUpdate={fetchStats} />}
           {activeTab === 'timeline' && <TimelineManager token={token} onUpdate={fetchStats} />}
           {activeTab === 'news' && <NewsManager token={token} onUpdate={fetchStats} />}
@@ -231,12 +277,105 @@ export default function AdminDashboard() {
 }
 
 // ─── OVERVIEW TAB ───────────────────────────────────────────────────
-function OverviewTab({ stats }: { stats: Stats }) {
+function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: Tab) => void }) {
+  const menuTiles = [
+    {
+      id: 'notifications' as Tab,
+      title: 'Notifications',
+      subtitle: stats.unread_notifications > 0 ? `${stats.unread_notifications} Unread Alerts` : 'Push & Activity',
+      bgColor: '#9cb6f9',
+      borderColor: '#1e1b4b',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'messages' as Tab,
+      title: 'Messages',
+      subtitle: stats.unread_messages > 0 ? `${stats.unread_messages} New Enquiries` : 'Visitor Inbox',
+      bgColor: '#ff5884',
+      borderColor: '#4c0519',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'blogs' as Tab,
+      title: 'Blogs',
+      subtitle: `${stats.total_blogs} Articles`,
+      bgColor: '#ffb020',
+      borderColor: '#451a03',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'gallery' as Tab,
+      title: 'Gallery',
+      subtitle: `${stats.total_gallery} Photos`,
+      bgColor: '#b9b4f8',
+      borderColor: '#2e1065',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'timeline' as Tab,
+      title: 'Timeline',
+      subtitle: `${stats.total_timeline} Milestones`,
+      bgColor: '#1dd1a1',
+      borderColor: '#022c22',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'news' as Tab,
+      title: 'News',
+      subtitle: `${stats.total_news} Press Items`,
+      bgColor: '#ffab00',
+      borderColor: '#451a03',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'comments' as Tab,
+      title: 'Comments',
+      subtitle: stats.pending_comments > 0 ? `${stats.pending_comments} Pending` : 'Visitor Feedback',
+      bgColor: '#f472b6',
+      borderColor: '#500724',
+      textColor: '#0f172a'
+    },
+    {
+      id: 'subscribers' as Tab,
+      title: 'Subscribers',
+      subtitle: `${stats.total_subscribers} Audience`,
+      bgColor: '#38bdf8',
+      borderColor: '#082f49',
+      textColor: '#0f172a'
+    }
+  ];
+
   return (
     <div className="overview-tab animate-fade-in">
-      <h2 style={{ fontSize: '1.4rem', fontWeight: '600', marginBottom: '20px' }}>System Overview</h2>
+      {/* 2-Column Rounded Vibrant Cards Menu (Matching User Reference) */}
+      <div className="mobile-menu-hub-section">
+        <h2 className="mobile-menu-hub-heading">
+          <span>Admin Menu</span>
+          <span className="hub-badge">Tap to Navigate</span>
+        </h2>
+        <div className="mobile-menu-tiles-grid">
+          {menuTiles.map((tile) => (
+            <button
+              key={tile.id}
+              onClick={() => onTabSelect(tile.id)}
+              className="mobile-menu-tile"
+              style={{
+                backgroundColor: tile.bgColor,
+                borderColor: tile.borderColor,
+                color: tile.textColor
+              }}
+              aria-label={`Open ${tile.title}`}
+            >
+              <span className="mobile-menu-tile-title">{tile.title}</span>
+              <span className="mobile-menu-tile-sub">{tile.subtitle}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <h2 style={{ fontSize: '1.4rem', fontWeight: '600', margin: '28px 0 20px' }}>System Overview</h2>
       <div className="overview-stats-grid">
-        <div className="stat-card gradient-cyan">
+        <div className="stat-card gradient-cyan" onClick={() => onTabSelect('blogs')} style={{ cursor: 'pointer' }}>
           <div className="stat-icon-wrapper"><BookOpen size={22} /></div>
           <div className="stat-details">
             <h3>{stats.total_blogs}</h3>
@@ -244,7 +383,7 @@ function OverviewTab({ stats }: { stats: Stats }) {
           </div>
         </div>
 
-        <div className="stat-card gradient-saffron">
+        <div className="stat-card gradient-saffron" onClick={() => onTabSelect('timeline')} style={{ cursor: 'pointer' }}>
           <div className="stat-icon-wrapper"><Calendar size={22} /></div>
           <div className="stat-details">
             <h3>{stats.total_timeline}</h3>
@@ -252,7 +391,7 @@ function OverviewTab({ stats }: { stats: Stats }) {
           </div>
         </div>
 
-        <div className="stat-card gradient-pink">
+        <div className="stat-card gradient-pink" onClick={() => onTabSelect('news')} style={{ cursor: 'pointer' }}>
           <div className="stat-icon-wrapper"><Compass size={22} /></div>
           <div className="stat-details">
             <h3>{stats.total_news}</h3>
