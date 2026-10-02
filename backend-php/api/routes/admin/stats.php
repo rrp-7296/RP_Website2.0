@@ -17,11 +17,17 @@ $queries = [
     'pending_comments'     => 'SELECT COUNT(*) FROM blog_comments WHERE (is_approved = 0 OR is_approved IS NULL)',
     'total_subscribers'    => 'SELECT COUNT(*) FROM subscriptions',
     'unread_notifications' => 'SELECT COUNT(*) FROM notifications WHERE (is_read = 0 OR is_read IS NULL)',
+    'unique_visitors_today'=> 'SELECT COUNT(DISTINCT visitor_id) FROM analytics_sessions WHERE started_at >= CURRENT_DATE',
+    'total_unique_visitors'=> 'SELECT COUNT(DISTINCT visitor_id) FROM analytics_sessions',
 ];
 
 foreach ($queries as $key => $sql) {
-    $stmt = $db->query($sql);
-    $counts[$key] = (int) $stmt->fetchColumn();
+    try {
+        $stmt = $db->query($sql);
+        $counts[$key] = (int) $stmt->fetchColumn();
+    } catch (Exception $e) {
+        $counts[$key] = 0;
+    }
 }
 
 json_success($counts);

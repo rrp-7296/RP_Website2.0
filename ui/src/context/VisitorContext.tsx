@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { apiUrl } from '../config/api';
+import { analytics } from '../services/analyticsTracker';
 
 export interface VisitorProfile {
   name: string;
@@ -87,6 +88,9 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify(profile));
     localStorage.setItem(VISITOR_PROMPT_KEY, 'true');
     setIsModalOpen(false);
+
+    // Sync visitor name with analytics tracker immediately
+    analytics.setVisitorName(profile.name);
 
     // Save to backend database asynchronously
     try {

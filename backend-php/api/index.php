@@ -158,12 +158,22 @@ if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || s
     exit;
 }
 
+// ── Analytics Beacon (public) ─────────────────────────────────────────────
+if (str_starts_with($path, '/analytics')) {
+    require_once $routesDir . '/analytics.php';
+    exit;
+}
+
 // ── Admin routes (protected) ──────────────────────────────────────────────
 if (str_starts_with($path, '/admin')) {
     $adminPath = substr($path, strlen('/admin'));
 
     if ($adminPath === '/stats' && $method === 'GET') {
         require_once $routesDir . '/admin/stats.php';
+        exit;
+    }
+    if (str_starts_with($adminPath, '/analytics')) {
+        require_once $routesDir . '/analytics.php';
         exit;
     }
     if (str_starts_with($adminPath, '/blogs')) {

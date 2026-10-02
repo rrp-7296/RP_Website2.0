@@ -20,6 +20,7 @@ import { VisitorProvider } from './context/VisitorContext';
 import VisitorLoginModal from './components/VisitorLoginModal';
 import VisitorWelcomeToast from './components/VisitorWelcomeToast';
 import { initAdminPushNotifications } from './services/adminPushNotifications';
+import { analytics } from './services/analyticsTracker';
 import './App.css';
 
 // A layout wrapper that decides whether to show Navbar/Footer
@@ -30,6 +31,9 @@ function AppContent() {
   const [prevPath, setPrevPath] = useState(location.pathname);
 
   React.useEffect(() => {
+    // Track non-blocking analytics for visitor usage patterns
+    analytics.trackPageView(location.pathname);
+
     if (location.pathname !== prevPath) {
       // Trigger loader on route changes (unless it's admin path)
       if (!location.pathname.startsWith('/admin') && !prevPath.startsWith('/admin')) {

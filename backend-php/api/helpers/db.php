@@ -174,11 +174,64 @@ function ensure_tables_exist(PDO $pdo): void {
 
         // 8. admin_fcm_tokens (use VARCHAR(255) because MySQL does not support UNIQUE on TEXT without key length)
         ensure_fcm_tokens_table($pdo);
+
+        // 9. analytics tables (sessions & daily summaries)
+        ensure_analytics_tables($pdo);
     } catch (Exception $e) {
         // Log or silently continue if tables already created
     }
 
     ensure_images_columns($pdo);
+}
+
+/**
+ * Ensure analytics tables exist for tracking unique visitors and session flows.
+ */
+function ensure_analytics_tables(PDO $pdo): void {
+    $isSQLite = (defined('DB_DRIVER') && DB_DRIVER === 'sqlite');
+    $engine   = $isSQLite ? '' : 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+    try {
+        $indexClause = $isSQLite ? '' : ', INDEX idx_visitor (visitor_id), INDEX idx_started (started_at), INDEX idx_last_seen (last_seen_at)';
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS analytics_sessions (
+                session_id       VARCHAR(64) PRIMARY KEY,
+                visitor_id       VARCHAR(64) NOT NULL,
+                visitor_name     VARCHAR(100) NULL,
+                started_at       DATETIME NOT NULL,
+                last_seen_at     DATETIME NOT NULL,
+                duration_seconds INT DEFAULT 0,
+                pageviews_count  INT DEFAULT 1,
+                entry_page       VARCHAR(150) NOT NULL,
+                pages_visited    TEXT NOT NULL,
+                device_type      VARCHAR(20) DEFAULT 'desktop',
+                browser          VARCHAR(50) DEFAULT '',
+                os               VARCHAR(50) DEFAULT '',
+                referrer         VARCHAR(255) DEFAULT '',
+                ip_hash          VARCHAR(64) NULL
+                {$indexClause}
+            ) {$engine};
+        ");
+
+        if ($isSQLite) {
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_analytics_visitor ON analytics_sessions(visitor_id);");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_analytics_started ON analytics_sessions(started_at);");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_analytics_last_seen ON analytics_sessions(last_seen_at);");
+        }
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS analytics_daily_summary (
+                date                 DATE PRIMARY KEY,
+                unique_visitors      INT DEFAULT 0,
+                total_sessions       INT DEFAULT 0,
+                total_pageviews      INT DEFAULT 0,
+                avg_duration_seconds INT DEFAULT 0,
+                top_pages_json       TEXT NULL,
+                devices_json         TEXT NULL
+            ) {$engine};
+        ");
+    } catch (Exception $e) {
+        // Log or continue
+    }
 }
 
 /**

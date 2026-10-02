@@ -5,15 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
   Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
-  Bell, Menu, X, Users, RefreshCw, ArrowLeft
+  Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { initAdminPushNotifications, stopAdminPushNotifications, getLocalFCMToken, submitFCMTokenToServer } from '../../services/adminPushNotifications';
 
-type Tab = 'overview' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
+type Tab = 'overview' | 'analytics' | 'blogs' | 'timeline' | 'news' | 'gallery' | 'messages' | 'comments' | 'notifications' | 'subscribers';
 
 const tabLabels: Record<Tab, string> = {
   overview: 'Overview',
+  analytics: 'Visitor Analytics',
   blogs: 'Manage Blogs',
   timeline: 'Manage Timeline',
   news: 'Manage News',
@@ -33,6 +34,8 @@ interface Stats {
   pending_comments: number;
   total_subscribers: number;
   unread_notifications: number;
+  unique_visitors_today?: number;
+  total_unique_visitors?: number;
 }
 
 function ImageFilesPreview({ files, onRemove }: { files: File[], onRemove: (index: number) => void }) {
@@ -194,6 +197,13 @@ export default function AdminDashboard() {
               </button>
             </li>
             <li>
+              <button onClick={() => handleTabClick('analytics')} className={`dash-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}>
+                <Activity size={18} /> 
+                <span>Analytics</span>
+                {(stats.unique_visitors_today ?? 0) > 0 && <span className="badge saffron-bg">{stats.unique_visitors_today}</span>}
+              </button>
+            </li>
+            <li>
               <button onClick={() => handleTabClick('blogs')} className={`dash-nav-btn ${activeTab === 'blogs' ? 'active' : ''}`}>
                 <BookOpen size={18} /> Manage Blogs
               </button>
@@ -262,6 +272,7 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'overview' && <OverviewTab stats={stats} onTabSelect={handleTabClick} />}
+          {activeTab === 'analytics' && <AnalyticsPanel token={token} />}
           {activeTab === 'blogs' && <BlogsManager token={token} onUpdate={fetchStats} />}
           {activeTab === 'timeline' && <TimelineManager token={token} onUpdate={fetchStats} />}
           {activeTab === 'news' && <NewsManager token={token} onUpdate={fetchStats} />}
@@ -279,6 +290,13 @@ export default function AdminDashboard() {
 // ─── OVERVIEW TAB ───────────────────────────────────────────────────
 function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: Tab) => void }) {
   const menuTiles = [
+    {
+      id: 'analytics' as Tab,
+      title: 'Analytics',
+      subtitle: (stats.unique_visitors_today ?? 0) > 0 ? `${stats.unique_visitors_today} Unique Today` : 'Traffic & Journeys',
+      gradientClass: 'gradient-teal',
+      icon: Activity
+    },
     {
       id: 'notifications' as Tab,
       title: 'Notifications',
@@ -1618,6 +1636,402 @@ function SubscribersManager({ token, onUpdate }: { token: string | null, onUpdat
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── VISITOR ANALYTICS PANEL ──────────────────────────────────────────
+
+interface AnalyticsSession {
+  session_id: string;
+  visitor_id: string;
+  visitor_name?: string | null;
+  started_at: string;
+  last_seen_at: string;
+  duration_seconds: number | string;
+  pageviews_count: number | string;
+  entry_page: string;
+  pages_visited: string;
+  device_type: string;
+  browser: string;
+  os: string;
+  referrer: string;
+  pages_list?: string[];
+}
+
+interface AnalyticsData {
+  range: string;
+  kpis: {
+    unique_visitors: number;
+    unique_today: number;
+    total_sessions: number;
+    total_pageviews: number;
+    avg_duration_seconds: number;
+  };
+  device_breakdown: Record<string, number>;
+  top_pages: Array<{ path: string; views: number }>;
+  top_entry_pages: Array<{ path: string; count: number }>;
+  recent_sessions: AnalyticsSession[];
+}
+
+function formatDuration(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
+function formatRouteLabel(path: string): string {
+  if (!path || path === '/' || path === '/#/' || path === '/#') return 'Home (/)';
+  const clean = path.replace(/^(\/#|\/)/, '').split('?')[0];
+  if (!clean) return 'Home (/)';
+  return '/' + clean;
+}
+
+function AnalyticsPanel({ token }: { token: string | null }) {
+  const [range, setRange] = useState<'today' | '7d' | '30d' | 'all'>('7d');
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAnalytics = async (selectedRange = range, isManual = false) => {
+    if (isManual) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await fetch(apiUrl(`/admin/analytics?range=${selectedRange}`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (err) {
+      console.error('Failed to load analytics', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics(range);
+  }, [range, token]);
+
+  const kpis = data?.kpis || {
+    unique_visitors: 0,
+    unique_today: 0,
+    total_sessions: 0,
+    total_pageviews: 0,
+    avg_duration_seconds: 0
+  };
+
+  const deviceBreakdown = data?.device_breakdown || {};
+  const totalDeviceCount = Object.values(deviceBreakdown).reduce((a, b) => a + b, 0) || 1;
+  const mobileCount = deviceBreakdown.mobile || 0;
+  const desktopCount = deviceBreakdown.desktop || 0;
+  const tabletCount = deviceBreakdown.tablet || 0;
+
+  const mobilePct = Math.round((mobileCount / totalDeviceCount) * 100);
+  const desktopPct = Math.round((desktopCount / totalDeviceCount) * 100);
+  const tabletPct = Math.max(0, 100 - (mobilePct + desktopPct));
+
+  const topPages = data?.top_pages || [];
+  const maxViews = topPages.length > 0 ? Math.max(...topPages.map(p => p.views), 1) : 1;
+  const recentSessions = data?.recent_sessions || [];
+
+  return (
+    <div className="analytics-container animate-fade-in">
+      {/* Header with Title and Range Switcher */}
+      <div className="analytics-header glass-card">
+        <div className="analytics-header-title">
+          <h2>
+            <Activity className="saffron" size={24} />
+            Visitor Analytics & Usage Patterns
+          </h2>
+          <p>Real-time zero-impact visitor metrics, navigation journeys, and audience breakdown</p>
+        </div>
+
+        <div className="analytics-controls">
+          <div className="analytics-range-selector">
+            {(['today', '7d', '30d', 'all'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`analytics-range-btn ${range === r ? 'active' : ''}`}
+              >
+                {r === 'today' ? 'Today' : r === '7d' ? '7 Days' : r === '30d' ? '30 Days' : 'All Time'}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => fetchAnalytics(range, true)}
+            className="btn btn-outline analytics-refresh-btn"
+            title="Refresh Data"
+            disabled={refreshing || loading}
+          >
+            <RefreshCw size={14} className={refreshing ? 'spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="analytics-kpi-grid">
+        <div className="analytics-kpi-card glass-card">
+          <div className="analytics-kpi-icon" style={{ background: 'rgba(13, 148, 136, 0.15)', color: '#14b8a6' }}>
+            <Users size={22} />
+          </div>
+          <div className="analytics-kpi-info">
+            <span className="analytics-kpi-value">{kpis.unique_visitors}</span>
+            <span className="analytics-kpi-label">Unique Visitors</span>
+            <span className="analytics-kpi-badge" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2dd4bf' }}>
+              Distinct People
+            </span>
+          </div>
+        </div>
+
+        <div className="analytics-kpi-card glass-card">
+          <div className="analytics-kpi-icon" style={{ background: 'rgba(255, 153, 51, 0.15)', color: '#FF9933' }}>
+            <TrendingUp size={22} />
+          </div>
+          <div className="analytics-kpi-info">
+            <span className="analytics-kpi-value">{kpis.unique_today}</span>
+            <span className="analytics-kpi-label">Unique Today</span>
+            <span className="analytics-kpi-badge saffron-bg" style={{ color: '#0f172a' }}>
+              Live Counter
+            </span>
+          </div>
+        </div>
+
+        <div className="analytics-kpi-card glass-card">
+          <div className="analytics-kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+            <Activity size={22} />
+          </div>
+          <div className="analytics-kpi-info">
+            <span className="analytics-kpi-value">{kpis.total_sessions}</span>
+            <span className="analytics-kpi-label">Total Visits</span>
+            <span className="analytics-kpi-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc' }}>
+              Sessions
+            </span>
+          </div>
+        </div>
+
+        <div className="analytics-kpi-card glass-card">
+          <div className="analytics-kpi-icon" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }}>
+            <Eye size={22} />
+          </div>
+          <div className="analytics-kpi-info">
+            <span className="analytics-kpi-value">{kpis.total_pageviews}</span>
+            <span className="analytics-kpi-label">Page Views</span>
+            <span className="analytics-kpi-badge" style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8' }}>
+              Total Hits
+            </span>
+          </div>
+        </div>
+
+        <div className="analytics-kpi-card glass-card">
+          <div className="analytics-kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+            <Clock size={22} />
+          </div>
+          <div className="analytics-kpi-info">
+            <span className="analytics-kpi-value">{formatDuration(kpis.avg_duration_seconds)}</span>
+            <span className="analytics-kpi-label">Avg Time on Site</span>
+            <span className="analytics-kpi-badge green-bg" style={{ color: '#0f172a' }}>
+              Dwell Time
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Two Column Grid: Top Pages & Device Composition */}
+      <div className="analytics-grid-two">
+        {/* Top Pages */}
+        <div className="analytics-card glass-card">
+          <h3 className="analytics-card-title">
+            <span>Popular Pages & Sections</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Views</span>
+          </h3>
+
+          {topPages.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No page visit data recorded in this period yet.
+            </div>
+          ) : (
+            <div className="analytics-page-list">
+              {topPages.map((page, idx) => {
+                const pct = Math.max(8, Math.round((page.views / maxViews) * 100));
+                return (
+                  <div key={idx} className="analytics-page-item">
+                    <div className="analytics-page-bar" style={{ width: `${pct}%` }} />
+                    <div className="analytics-page-path">
+                      <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>#{idx + 1}</span>
+                      <span>{formatRouteLabel(page.path)}</span>
+                    </div>
+                    <span className="analytics-page-count">{page.views} views</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Device Breakdown & Top Entry Points */}
+        <div className="analytics-card glass-card">
+          <h3 className="analytics-card-title">
+            <span>Device Distribution</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Total: {totalDeviceCount}</span>
+          </h3>
+
+          <div className="analytics-devices-wrap">
+            {/* Visual Multi-Segment Bar */}
+            <div className="analytics-device-bar-track">
+              {desktopPct > 0 && <div className="analytics-device-bar-segment" style={{ width: `${desktopPct}%`, background: '#3b82f6' }} title={`Desktop: ${desktopPct}%`} />}
+              {mobilePct > 0 && <div className="analytics-device-bar-segment" style={{ width: `${mobilePct}%`, background: '#10b981' }} title={`Mobile: ${mobilePct}%`} />}
+              {tabletPct > 0 && <div className="analytics-device-bar-segment" style={{ width: `${tabletPct}%`, background: '#f59e0b' }} title={`Tablet: ${tabletPct}%`} />}
+            </div>
+
+            <div className="analytics-device-legend">
+              <div className="analytics-device-item">
+                <span className="analytics-device-item-name">
+                  <Laptop size={14} style={{ color: '#3b82f6' }} /> Desktop
+                </span>
+                <span className="analytics-device-item-val">{desktopPct}%</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{desktopCount} visits</span>
+              </div>
+              <div className="analytics-device-item">
+                <span className="analytics-device-item-name">
+                  <Smartphone size={14} style={{ color: '#10b981' }} /> Mobile
+                </span>
+                <span className="analytics-device-item-val">{mobilePct}%</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{mobileCount} visits</span>
+              </div>
+              <div className="analytics-device-item">
+                <span className="analytics-device-item-name">
+                  <Tablet size={14} style={{ color: '#f59e0b' }} /> Tablet
+                </span>
+                <span className="analytics-device-item-val">{tabletPct > 0 ? tabletPct : 0}%</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{tabletCount} visits</span>
+              </div>
+            </div>
+
+            {/* Top Landing / Entry Pages */}
+            <div style={{ marginTop: '14px' }}>
+              <h4 style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                Top Entry Pages (Landing Points)
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {(data?.top_entry_pages || []).slice(0, 4).map((entry, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
+                    <span>{formatRouteLabel(entry.path)}</span>
+                    <strong style={{ color: 'var(--primary)' }}>{entry.count} landings</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Visitor Journeys Table */}
+      <div className="analytics-card glass-card">
+        <h3 className="analytics-card-title">
+          <span>Recent Visitor Navigation Journeys</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Latest {recentSessions.length} Sessions</span>
+        </h3>
+
+        <div className="responsive-table-wrap" style={{ maxHeight: '520px', overflowY: 'auto' }}>
+          <table className="admin-table analytics-journey-table">
+            <thead>
+              <tr>
+                <th>Visitor</th>
+                <th>Device & OS</th>
+                <th>Dwell Time</th>
+                <th>Pages Viewed</th>
+                <th>Navigation Path Sequence</th>
+                <th>Last Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && recentSessions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>
+                    Loading visitor sessions...
+                  </td>
+                </tr>
+              ) : recentSessions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>
+                    No visitor sessions recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                recentSessions.map((session) => {
+                  const pagesList = session.pages_list && session.pages_list.length > 0
+                    ? session.pages_list
+                    : [session.entry_page || '/'];
+
+                  return (
+                    <tr key={session.session_id}>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {session.visitor_name ? (
+                            <strong style={{ color: 'var(--primary)' }}>
+                              {session.visitor_name}
+                            </strong>
+                          ) : (
+                            <span style={{ fontWeight: 600 }}>
+                              Guest #{session.visitor_id.substring(session.visitor_id.length - 6)}
+                            </span>
+                          )}
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                            {session.visitor_id.substring(0, 10)}...
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', textTransform: 'capitalize' }}>
+                          {session.device_type} • {session.browser || session.os || 'Browser'}
+                        </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#34d399' }}>
+                          {formatDuration(Number(session.duration_seconds) || 0)}
+                        </strong>
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: 'rgba(255, 153, 51, 0.15)', color: '#FF9933' }}>
+                          {session.pageviews_count} pages
+                        </span>
+                      </td>
+                      <td>
+                        <div className="analytics-journey-flow">
+                          {pagesList.map((p, pIdx) => (
+                            <React.Fragment key={pIdx}>
+                              <span className="analytics-journey-step">
+                                {formatRouteLabel(typeof p === 'string' ? p : (p as any)?.path || '/')}
+                              </span>
+                              {pIdx < pagesList.length - 1 && (
+                                <span className="analytics-journey-arrow">→</span>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {session.last_seen_at ? new Date(session.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
