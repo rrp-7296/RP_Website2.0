@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, BookOpen, Calendar, Image as ImageIcon, MessageSquare, Mail, 
   Plus, Trash2, Check, LogOut, Upload, Shield, Eye, ThumbsUp, MapPin, Compass,
-  Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp, Wrench
+  Bell, Menu, X, Users, RefreshCw, ArrowLeft, Activity, Smartphone, Laptop, Tablet, Clock, TrendingUp, Wrench, Home
 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 import { adminAuth } from '../../services/adminAuth';
@@ -187,6 +187,15 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="admin-dash-actions">
+          <button 
+            type="button"
+            onClick={() => navigate('/')} 
+            className="btn btn-outline btn-sm home-top-btn" 
+            title="Navigate to Public Homepage"
+            aria-label="Navigate to Public Homepage"
+          >
+            <Home size={15} /> <span className="home-top-text">Website</span>
+          </button>
           <ThemeToggle />
           <button onClick={handleLogout} className="btn btn-outline btn-sm logout-btn" title="Logout">
             <LogOut size={16} /> <span className="logout-text">Logout</span>
@@ -272,6 +281,12 @@ export default function AdminDashboard() {
                 <span>Diagnostics</span>
               </button>
             </li>
+            <li className="sidebar-home-item" style={{ marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+              <button onClick={() => navigate('/')} className="dash-nav-btn home-nav-btn" title="Navigate to Public Homepage">
+                <Home size={18} /> 
+                <span>Public Website</span>
+              </button>
+            </li>
           </ul>
         </aside>
 
@@ -311,6 +326,7 @@ export default function AdminDashboard() {
 
 // ─── OVERVIEW TAB ───────────────────────────────────────────────────
 function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: Tab) => void }) {
+  const navigate = useNavigate();
   const menuTiles = [
     {
       id: 'analytics' as Tab,
@@ -389,7 +405,16 @@ function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: 
       <div className="mobile-menu-hub-section">
         <h2 className="mobile-menu-hub-heading">
           <span>Admin Menu</span>
-          <span className="hub-badge">Tap to Navigate</span>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="hub-home-btn"
+            title="Navigate to Public Homepage"
+            aria-label="Navigate to Public Homepage"
+          >
+            <Home size={15} />
+            <span>Public Homepage</span>
+          </button>
         </h2>
         <div className="mobile-menu-tiles-grid">
           {menuTiles.map((tile) => (
