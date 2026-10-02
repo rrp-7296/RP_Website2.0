@@ -1665,6 +1665,21 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2) !important;
   border: none !important;
 }
+.gradient-indigo {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25) !important;
+  border: none !important;
+}
+.gradient-violet {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.25) !important;
+  border: none !important;
+}
+.gradient-emerald {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25) !important;
+  border: none !important;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    TIMELINE PREVIEW & JOURNEY TIMELINE
@@ -2907,17 +2922,17 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ADMIN MOBILE MENU HUB TILES (2-COLUMN ROUNDED VIBRANT CARDS)
+   ADMIN MENU TILES (PREMIUM GRADIENT STAT-CARD DESIGN LANGUAGE)
    ═══════════════════════════════════════════════════════════════════════════ */
 .mobile-menu-hub-section {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .mobile-menu-hub-heading {
   font-size: 1.45rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin: 0 0 16px 2px;
+  margin: 0 0 18px 2px;
   letter-spacing: -0.4px;
   display: flex;
   align-items: center;
@@ -2945,50 +2960,77 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 
 .mobile-menu-tile {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  min-height: 98px;
-  padding: 18px 12px;
-  border-radius: 22px;
-  border: 2.5px solid #111827;
-  box-shadow: 0 4px 0 #111827;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 70px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none !important;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, filter 0.15s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  text-align: center;
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
   width: 100%;
+  text-align: left;
 }
 
 .mobile-menu-tile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #111827;
+  filter: brightness(1.06);
 }
 
 .mobile-menu-tile:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #111827;
+  transform: translateY(1px);
+  filter: brightness(0.98);
 }
 
+.mobile-menu-tile .stat-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+  padding: 0;
+}
+
+.mobile-menu-tile .stat-details {
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.mobile-menu-tile .mobile-menu-tile-title,
 .mobile-menu-tile-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
-  letter-spacing: -0.3px;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.2px !important;
 }
 
+.mobile-menu-tile .mobile-menu-tile-sub,
 .mobile-menu-tile-sub {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: rgba(15, 23, 42, 0.75);
-  line-height: 1.2;
+  font-size: 0.76rem !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  margin-top: 2px !important;
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
 }
 
 /* Subtab Mobile Breadcrumb Return Banner */
@@ -3061,21 +3103,30 @@ button { font-family: inherit; cursor: pointer; border: none; outline: none; }
 @media (max-width: 640px) {
   .mobile-menu-tiles-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .mobile-menu-tile {
-    min-height: 90px;
-    padding: 14px 8px;
-    border-radius: 18px;
+    min-height: 64px;
+    padding: 10px 10px;
+    border-radius: 12px;
+    gap: 8px;
   }
 
+  .mobile-menu-tile .stat-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .mobile-menu-tile .mobile-menu-tile-title,
   .mobile-menu-tile-title {
-    font-size: 1.05rem;
+    font-size: 0.86rem !important;
   }
 
+  .mobile-menu-tile .mobile-menu-tile-sub,
   .mobile-menu-tile-sub {
-    font-size: 0.75rem;
+    font-size: 0.68rem !important;
   }
 }
 

@@ -282,72 +282,63 @@ function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: 
     {
       id: 'notifications' as Tab,
       title: 'Notifications',
-      subtitle: stats.unread_notifications > 0 ? `${stats.unread_notifications} Unread Alerts` : 'Push & Activity',
-      bgColor: '#9cb6f9',
-      borderColor: '#1e1b4b',
-      textColor: '#0f172a'
+      subtitle: stats.unread_notifications > 0 ? `${stats.unread_notifications} Unread Alerts` : 'Activity Alerts',
+      gradientClass: 'gradient-indigo',
+      icon: Bell
     },
     {
       id: 'messages' as Tab,
       title: 'Messages',
       subtitle: stats.unread_messages > 0 ? `${stats.unread_messages} New Enquiries` : 'Visitor Inbox',
-      bgColor: '#ff5884',
-      borderColor: '#4c0519',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-purple',
+      icon: Mail
     },
     {
       id: 'blogs' as Tab,
       title: 'Blogs',
       subtitle: `${stats.total_blogs} Articles`,
-      bgColor: '#ffb020',
-      borderColor: '#451a03',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-cyan',
+      icon: BookOpen
     },
     {
       id: 'gallery' as Tab,
       title: 'Gallery',
       subtitle: `${stats.total_gallery} Photos`,
-      bgColor: '#b9b4f8',
-      borderColor: '#2e1065',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-violet',
+      icon: ImageIcon
     },
     {
       id: 'timeline' as Tab,
       title: 'Timeline',
       subtitle: `${stats.total_timeline} Milestones`,
-      bgColor: '#1dd1a1',
-      borderColor: '#022c22',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-saffron',
+      icon: Calendar
     },
     {
       id: 'news' as Tab,
       title: 'News',
       subtitle: `${stats.total_news} Press Items`,
-      bgColor: '#ffab00',
-      borderColor: '#451a03',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-pink',
+      icon: Compass
     },
     {
       id: 'comments' as Tab,
       title: 'Comments',
-      subtitle: stats.pending_comments > 0 ? `${stats.pending_comments} Pending` : 'Visitor Feedback',
-      bgColor: '#f472b6',
-      borderColor: '#500724',
-      textColor: '#0f172a'
+      subtitle: stats.pending_comments > 0 ? `${stats.pending_comments} Pending Review` : 'Visitor Feedback',
+      gradientClass: 'gradient-blue',
+      icon: MessageSquare
     },
     {
       id: 'subscribers' as Tab,
       title: 'Subscribers',
       subtitle: `${stats.total_subscribers} Audience`,
-      bgColor: '#38bdf8',
-      borderColor: '#082f49',
-      textColor: '#0f172a'
+      gradientClass: 'gradient-emerald',
+      icon: Users
     }
   ];
 
   return (
     <div className="overview-tab animate-fade-in">
-      {/* 2-Column Rounded Vibrant Cards Menu (Matching User Reference) */}
       <div className="mobile-menu-hub-section">
         <h2 className="mobile-menu-hub-heading">
           <span>Admin Menu</span>
@@ -358,65 +349,18 @@ function OverviewTab({ stats, onTabSelect }: { stats: Stats, onTabSelect: (tab: 
             <button
               key={tile.id}
               onClick={() => onTabSelect(tile.id)}
-              className="mobile-menu-tile"
-              style={{
-                backgroundColor: tile.bgColor,
-                borderColor: tile.borderColor,
-                color: tile.textColor
-              }}
+              className={`mobile-menu-tile stat-card ${tile.gradientClass}`}
               aria-label={`Open ${tile.title}`}
             >
-              <span className="mobile-menu-tile-title">{tile.title}</span>
-              <span className="mobile-menu-tile-sub">{tile.subtitle}</span>
+              <div className="stat-icon-wrapper">
+                <tile.icon size={19} />
+              </div>
+              <div className="stat-details">
+                <div className="mobile-menu-tile-title">{tile.title}</div>
+                <span className="mobile-menu-tile-sub">{tile.subtitle}</span>
+              </div>
             </button>
           ))}
-        </div>
-      </div>
-
-      <h2 style={{ fontSize: '1.4rem', fontWeight: '600', margin: '28px 0 20px' }}>System Overview</h2>
-      <div className="overview-stats-grid">
-        <div className="stat-card gradient-cyan" onClick={() => onTabSelect('blogs')} style={{ cursor: 'pointer' }}>
-          <div className="stat-icon-wrapper"><BookOpen size={22} /></div>
-          <div className="stat-details">
-            <h3>{stats.total_blogs}</h3>
-            <span>Total Blogs</span>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-saffron" onClick={() => onTabSelect('timeline')} style={{ cursor: 'pointer' }}>
-          <div className="stat-icon-wrapper"><Calendar size={22} /></div>
-          <div className="stat-details">
-            <h3>{stats.total_timeline}</h3>
-            <span>Timeline Events</span>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-pink" onClick={() => onTabSelect('news')} style={{ cursor: 'pointer' }}>
-          <div className="stat-icon-wrapper"><Compass size={22} /></div>
-          <div className="stat-details">
-            <h3>{stats.total_news}</h3>
-            <span>News Articles</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="overview-info-grid">
-        <div className="stat-card gradient-purple info-card">
-          <div className="stat-icon-wrapper"><Mail size={22} /></div>
-          <div className="stat-details">
-            <h3>{stats.unread_messages}</h3>
-            <span className="info-title">Unread Messages</span>
-            <p>Inbox messages submitted via contact form that require review and response.</p>
-          </div>
-        </div>
-
-        <div className="stat-card gradient-blue info-card">
-          <div className="stat-icon-wrapper"><MessageSquare size={22} /></div>
-          <div className="stat-details">
-            <h3>{stats.pending_comments}</h3>
-            <span className="info-title">Pending Comments</span>
-            <p>Comments posted on blog articles awaiting approval prior to public rendering.</p>
-          </div>
         </div>
       </div>
     </div>
