@@ -388,3 +388,117 @@ function broadcast_email_to_subscribers(PDO $db, string $title, string $summary,
 
     return ['sent' => $sentCount, 'total' => $total];
 }
+
+/**
+ * 5. Email Verification Link Dispatcher:
+ * Sends an email with a secure verification button to block junk/bot submissions.
+ *
+ * @param string $toEmail
+ * @param string $toName
+ * @param string $verifyUrl
+ * @param string $actionType   'contact' | 'subscriber' | 'visitor'
+ * @param array  $details      Optional details to display in the email
+ */
+function send_verification_email(string $toEmail, string $toName, string $verifyUrl, string $actionType, array $details = []): bool {
+    $toNameEsc = htmlspecialchars($toName ?: 'there', ENT_QUOTES, 'UTF-8');
+    $verifyUrlEsc = htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8');
+
+    switch ($actionType) {
+        case 'contact':
+            $subject = 'Confirm your message to Rakeshwar Pandey';
+            $badgeText = 'MESSAGE VERIFICATION';
+            $heading = 'Confirm Your Message';
+            $buttonText = 'Verify & Send Message →';
+            $desc = 'Thank you for reaching out through the official website. To protect against automated spam and ensure your message reaches Rakeshwar Pandey’s office, please confirm your email address by clicking the button below.';
+            break;
+        case 'visitor':
+            $subject = 'Confirm your visitor profile — Rakeshwar Pandey';
+            $badgeText = 'VISITOR VERIFICATION';
+            $heading = 'Confirm Your Profile';
+            $buttonText = 'Confirm Profile →';
+            $desc = 'Thank you for registering on the official portal of Rakeshwar Pandey. Please verify your email address to complete your visitor registration.';
+            break;
+        case 'subscriber':
+        default:
+            $subject = 'Confirm your newsletter subscription — Rakeshwar Pandey';
+            $badgeText = 'NEWSLETTER SUBSCRIPTION';
+            $heading = 'Confirm Your Subscription';
+            $buttonText = 'Confirm Subscription →';
+            $desc = 'Thank you for joining our updates list. To ensure you requested this subscription, please verify your email address by clicking the button below.';
+            break;
+    }
+
+    $detailsHtml = '';
+    if (!empty($details['subject'])) {
+        $subjectPreview = htmlspecialchars($details['subject'], ENT_QUOTES, 'UTF-8');
+        $detailsHtml .= "<p style='margin: 12px 0 0 0; font-size: 13px; color: #64748b;'><strong>Topic / Subject:</strong> {$subjectPreview}</p>";
+    }
+
+    $htmlBody = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+      <meta charset='utf-8'>
+      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+      <title>{$subject}</title>
+    </head>
+    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 32px 16px; color: #1e293b;'>
+      <div style='max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.25);'>
+        
+        <!-- Header -->
+        <div style='background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 28px 24px; text-align: center; border-bottom: 3px solid #FF9933;'>
+          <h2 style='margin: 0; font-size: 22px; font-weight: 800; color: #FF9933; letter-spacing: 0.5px;'>RAKESHWAR PANDEY</h2>
+          <p style='margin: 4px 0 0 0; font-size: 12px; color: #9ca3af; text-transform: uppercase;'>President — INTUC Jharkhand | Official Portal</p>
+        </div>
+
+        <!-- Content Body -->
+        <div style='padding: 36px 30px;'>
+          <div style='text-align: center; margin-bottom: 24px;'>
+            <span style='display: inline-block; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #ffedd5;'>
+              {$badgeText}
+            </span>
+            <h1 style='font-size: 24px; font-weight: 800; color: #0f172a; margin: 16px 0 8px 0;'>
+              {$heading}
+            </h1>
+            <p style='font-size: 15px; color: #475569; line-height: 1.6; margin: 0;'>
+              Hello {$toNameEsc},
+            </p>
+          </div>
+
+          <p style='font-size: 15px; color: #475569; line-height: 1.7; margin: 0 0 24px 0; text-align: center;'>
+            {$desc}
+          </p>
+
+          {$detailsHtml}
+
+          <!-- Verification CTA Button -->
+          <div style='text-align: center; margin: 32px 0;'>
+            <a href='{$verifyUrlEsc}' style='background: linear-gradient(135deg, #FF9933 0%, #e65100 100%); color: #ffffff; text-decoration: none; padding: 15px 36px; border-radius: 30px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 153, 51, 0.4);'>
+              {$buttonText}
+            </a>
+          </div>
+
+          <!-- Fallback Link -->
+          <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 24px 0 16px 0; font-size: 12px; color: #64748b; word-break: break-all;'>
+            <p style='margin: 0 0 6px 0; font-weight: 600; color: #475569;'>Button not working? Copy and paste this link into your browser:</p>
+            <a href='{$verifyUrlEsc}' style='color: #0284c7; text-decoration: underline;'>{$verifyUrlEsc}</a>
+          </div>
+
+          <p style='font-size: 12px; color: #94a3b8; text-align: center; margin: 20px 0 0 0;'>
+            ⏱️ This verification link is valid for <strong>24 hours</strong>. If you did not make this submission, no action is needed and this request will expire automatically.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style='background: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;'>
+          <p style='margin: 0;'>Official Website of Rakeshwar Pandey • INTUC Central Office, Jamshedpur</p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+    ";
+
+    return send_html_email($toEmail, $toName, $subject, $htmlBody);
+}
+

@@ -18,10 +18,10 @@ if ($method === 'GET' && $adminPath === '/messages') {
 
     $result = paginate(
         $db,
-        'SELECT COUNT(*) FROM contact_messages WHERE (is_deleted = 0 OR is_deleted IS NULL)',
+        'SELECT COUNT(*) FROM contact_messages WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (is_verified = 1 OR is_verified IS NULL)',
         'SELECT id, name, email, subject, message, is_read, is_replied, reply_message, replied_at, created_at
          FROM contact_messages
-         WHERE (is_deleted = 0 OR is_deleted IS NULL)
+         WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (is_verified = 1 OR is_verified IS NULL)
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?',
         [],

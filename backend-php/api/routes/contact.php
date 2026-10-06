@@ -1,9 +1,144 @@
 <?php
 /**
- * routes/contact.php — Public endpoints for contact form, visitor profile tracking, and subscriptions.
+ * routes/contact.php — Public endpoints for contact form, visitor profile tracking, subscriptions, and email verification.
  */
 
 $db = get_db();
+
+// GET or POST /verify — Verify Email Link for contact, subscriber, or visitor
+if (($method === 'GET' || $method === 'POST') && ($path === '/verify' || str_starts_with($path, '/verify'))) {
+    $token = $_GET['token'] ?? null;
+    $type  = $_GET['type'] ?? null;
+    if ($method === 'POST') {
+        $body  = get_body();
+        $token = $token ?: ($body['token'] ?? null);
+        $type  = $type ?: ($body['type'] ?? null);
+    }
+
+    if (!$token || !is_string($token)) {
+        json_error('Verification token is required.', 400);
+    }
+
+    $verified = verify_email_token($db, trim($token), $type ? trim($type) : null);
+    if (!$verified) {
+        json_error('This confirmation link is invalid or has expired. Please submit your request again.', 400);
+    }
+
+    $actionType = $verified['action_type'];
+    $email      = $verified['email'];
+    $payload    = $verified['payload'] ?? [];
+    $name       = $payload['name'] ?? '';
+
+    if ($actionType === 'contact') {
+        $msgId   = (int)($payload['message_id'] ?? 0);
+        $subject = $payload['subject'] ?? '';
+        $msgText = $payload['message'] ?? '';
+
+        // Mark message verified in database
+        if ($msgId > 0) {
+            $db->prepare('UPDATE contact_messages SET is_verified = 1 WHERE id = ?')->execute([$msgId]);
+        } else {
+            $db->prepare('UPDATE contact_messages SET is_verified = 1 WHERE email = ? AND is_verified = 0')->execute([$email]);
+        }
+
+        // Now trigger admin notification, FCM push, and email
+        $notifText = "New verified contact message from: {$name} ({$email})";
+        $db->prepare("INSERT INTO notifications (type, post_id, item_id, message) VALUES ('message', NULL, ?, ?)")
+           ->execute([$msgId, $notifText]);
+
+        broadcast_fcm_notification('📩 New Contact Message', $notifText);
+        @send_admin_contact_notification($name, $email, $subject, $msgText);
+
+        json_success([
+            'verified' => true,
+            'type'     => 'contact',
+            'email'    => $email,
+            'message'  => 'Your email has been verified! Your message has been safely delivered to Rakeshwar Pandey\'s office.'
+        ]);
+    }
+
+    if ($actionType === 'subscriber') {
+        $phone = $payload['phone'] ?? null;
+
+        // Activate or insert subscription
+        $check = $db->prepare('SELECT id FROM subscriptions WHERE email = ? LIMIT 1');
+        $check->execute([$email]);
+        if ($sub = $check->fetch()) {
+            $db->prepare("UPDATE subscriptions SET status = 'active', name = COALESCE(?, name), phone = COALESCE(?, phone) WHERE id = ?")
+               ->execute([$name ?: null, $phone ?: null, $sub['id']]);
+        } else {
+            $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
+               ->execute([$name ?: null, $email, $phone ?: null]);
+        }
+
+        // Also sync visitor_profiles
+        try {
+            $db->prepare("UPDATE visitor_profiles SET is_subscribed = 1 WHERE email = ?")->execute([$email]);
+        } catch (Exception $e) {}
+
+        // Admin notification
+        $notifMsg = "New verified subscriber: " . ($name ? "{$name} ({$email})" : $email);
+        $db->prepare("INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)")
+           ->execute([$notifMsg]);
+
+        broadcast_fcm_notification('🔔 New Subscriber', $notifMsg);
+
+        // Send welcome email to subscriber
+        @send_subscriber_welcome_email($email, $name);
+
+        json_success([
+            'verified' => true,
+            'type'     => 'subscriber',
+            'email'    => $email,
+            'message'  => 'Your email has been verified! Welcome to the official newsletter network of Rakeshwar Pandey.'
+        ]);
+    }
+
+    if ($actionType === 'visitor') {
+        $visitorId = (int)($payload['visitor_id'] ?? 0);
+        $phone     = $payload['phone'] ?? null;
+        $isSub     = !empty($payload['is_subscribed']) ? 1 : 0;
+
+        if ($visitorId > 0) {
+            $db->prepare('UPDATE visitor_profiles SET is_verified = 1 WHERE id = ?')->execute([$visitorId]);
+        } else {
+            $db->prepare('UPDATE visitor_profiles SET is_verified = 1 WHERE email = ?')->execute([$email]);
+        }
+
+        if ($isSub) {
+            $check = $db->prepare('SELECT id FROM subscriptions WHERE email = ? LIMIT 1');
+            $check->execute([$email]);
+            if ($sub = $check->fetch()) {
+                $db->prepare("UPDATE subscriptions SET status = 'active', name = COALESCE(?, name), phone = COALESCE(?, phone) WHERE id = ?")
+                   ->execute([$name ?: null, $phone ?: null, $sub['id']]);
+            } else {
+                $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
+                   ->execute([$name ?: null, $email, $phone ?: null]);
+            }
+            @send_subscriber_welcome_email($email, $name);
+        }
+
+        $notifMsg = "Verified visitor registered: '{$name}' ({$email})";
+        $db->prepare("INSERT INTO notifications (type, post_id, item_id, message) VALUES ('visitor', NULL, ?, ?)")
+           ->execute([$visitorId, $notifMsg]);
+
+        broadcast_fcm_notification('👤 Verified Visitor', $notifMsg);
+
+        json_success([
+            'verified' => true,
+            'type'     => 'visitor',
+            'email'    => $email,
+            'message'  => 'Your email has been verified! Welcome to the official portal.'
+        ]);
+    }
+
+    json_success([
+        'verified' => true,
+        'type'     => $actionType,
+        'email'    => $email,
+        'message'  => 'Your email has been verified successfully.'
+    ]);
+}
 
 // POST /messages (Contact Form Submission)
 if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
@@ -32,28 +167,38 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
     $subject = sanitize_clean_text($subject, 200);
     $message = sanitize_clean_text($message, 5000);
 
+    // Save as unverified (is_verified = 0) so spam/bots cannot enter inbox or trigger FCM alerts
     $stmt = $db->prepare(
-        'INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)'
+        'INSERT INTO contact_messages (name, email, subject, message, is_verified) VALUES (?, ?, ?, ?, 0)'
     );
     $stmt->execute([$name, $email, $subject, $message]);
     $msgId = (int) $db->lastInsertId();
 
-    // Create notification for admin dashboard
-    $notifText = "New contact message from: {$name} ({$email})";
-    $db->prepare(
-        "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('message', NULL, ?, ?)"
-    )->execute([$msgId, $notifText]);
+    // Issue verification token
+    $tokenInfo = create_verification_token($db, $email, 'contact', [
+        'message_id' => $msgId,
+        'name'       => $name,
+        'email'      => $email,
+        'subject'    => $subject,
+        'message'    => $message
+    ], 24);
 
-    // Send instant FCM push notification to admin phones
-    broadcast_fcm_notification('📩 New Contact Message', $notifText);
+    // Dispatch verification link email
+    send_verification_email($email, $name, $tokenInfo['verify_url'], 'contact', ['subject' => $subject]);
 
-    // Best-effort notification email to site owner
-    @send_notification_email($name, $email, $subject, $message);
+    $resp = [
+        'requires_verification' => true,
+        'email'                 => $email,
+        'message'               => "A confirmation link has been sent to {$email}. Please click the link in your email to verify and deliver your message."
+    ];
+    if (defined('DEBUG') && DEBUG) {
+        $resp['debug_verify_url'] = $tokenInfo['verify_url'];
+    }
 
-    json_message('Thank you! Your message has been submitted successfully.');
+    json_success($resp);
 }
 
-// POST /visitors — Save visitor profile & newsletter subscription (No duplicate entries)
+// POST /visitors — Save visitor profile & newsletter subscription (No duplicate entries, verifies email)
 if ($method === 'POST' && $path === '/visitors') {
     $body = get_body();
 
@@ -72,62 +217,85 @@ if ($method === 'POST' && $path === '/visitors') {
         json_error('Please provide a valid permanent email address.', 422);
     }
 
-    $isExisting = false;
-    $visitorId  = 0;
-
-    // Check if email already exists in visitor_profiles or subscriptions
     if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $checkVis = $db->prepare('SELECT id FROM visitor_profiles WHERE email = ? LIMIT 1');
+        // Check if already registered and verified
+        $checkVis = $db->prepare('SELECT id, is_verified FROM visitor_profiles WHERE email = ? LIMIT 1');
         $checkVis->execute([$email]);
-        if ($rowVis = $checkVis->fetch()) {
-            $isExisting = true;
-            $visitorId  = (int) $rowVis['id'];
+        $rowVis = $checkVis->fetch();
+
+        if ($rowVis && !empty($rowVis['is_verified'])) {
+            // Already verified visitor! Simply update profile
+            $visitorId = (int)$rowVis['id'];
             $db->prepare('UPDATE visitor_profiles SET name = ?, phone = COALESCE(?, phone), is_subscribed = ? WHERE id = ?')
                ->execute([$name, $phone ?: null, $isSubscribed, $visitorId]);
+
+            json_success([
+                'message'               => 'Welcome back! Profile updated.',
+                'is_existing'           => true,
+                'requires_verification' => false,
+                'visitor'               => [
+                    'id'            => $visitorId,
+                    'name'          => $name,
+                    'email'         => $email,
+                    'phone'         => $phone,
+                    'is_subscribed' => (bool)$isSubscribed
+                ]
+            ]);
         }
 
-        $checkSub = $db->prepare('SELECT id FROM subscriptions WHERE email = ? LIMIT 1');
-        $checkSub->execute([$email]);
-        if ($rowSub = $checkSub->fetch()) {
-            $isExisting = true;
-            if ($isSubscribed) {
-                $db->prepare("UPDATE subscriptions SET name = COALESCE(?, name), phone = COALESCE(?, phone), status = 'active' WHERE id = ?")
-                   ->execute([$name ?: null, $phone ?: null, $rowSub['id']]);
-            }
-        } elseif ($isSubscribed) {
-            $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
-               ->execute([$name ?: null, $email, $phone ?: null]);
-            
-            // Dispatch welcome email to new subscriber!
-            send_subscriber_welcome_email($email, $name);
+        // New or unverified visitor: insert / update as is_verified = 0
+        if ($rowVis) {
+            $visitorId = (int)$rowVis['id'];
+            $db->prepare('UPDATE visitor_profiles SET name = ?, phone = COALESCE(?, phone), is_subscribed = ?, is_verified = 0 WHERE id = ?')
+               ->execute([$name, $phone ?: null, $isSubscribed, $visitorId]);
+        } else {
+            $stmt = $db->prepare('INSERT INTO visitor_profiles (name, email, phone, is_subscribed, is_verified) VALUES (?, ?, ?, ?, 0)');
+            $stmt->execute([$name, $email, $phone ?: null, $isSubscribed]);
+            $visitorId = (int) $db->lastInsertId();
         }
-    }
 
-    if (!$visitorId) {
-        $stmt = $db->prepare('INSERT INTO visitor_profiles (name, email, phone, is_subscribed) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$name, $email ?: null, $phone ?: null, $isSubscribed]);
-        $visitorId = (int) $db->lastInsertId();
-    }
-
-    // Add notification for admin dashboard if it's a new visitor
-    if (!$isExisting) {
-        $contactInfo = array_filter([$email, $phone]);
-        $infoStr = !empty($contactInfo) ? ' (' . implode(', ', $contactInfo) . ')' : '';
-        $notifMsg = "New visitor registered: '{$name}'{$infoStr}";
-        $db->prepare(
-            "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('visitor', NULL, ?, ?)"
-        )->execute([$visitorId, $notifMsg]);
-
-        broadcast_fcm_notification('🔔 New Subscriber Registration', $notifMsg);
-    }
-
-    json_success([
-        'message'     => $isExisting ? 'Welcome back! Profile updated.' : 'Visitor profile saved successfully',
-        'is_existing' => $isExisting,
-        'visitor'     => [
-            'id'            => $visitorId,
+        // Issue verification token
+        $tokenInfo = create_verification_token($db, $email, 'visitor', [
+            'visitor_id'    => $visitorId,
             'name'          => $name,
             'email'         => $email,
+            'phone'         => $phone,
+            'is_subscribed' => $isSubscribed
+        ], 24);
+
+        send_verification_email($email, $name, $tokenInfo['verify_url'], 'visitor');
+
+        $resp = [
+            'message'               => "A confirmation link has been sent to {$email}. Please click it to verify your profile.",
+            'requires_verification' => true,
+            'email'                 => $email,
+            'visitor'               => [
+                'id'            => $visitorId,
+                'name'          => $name,
+                'email'         => $email,
+                'phone'         => $phone,
+                'is_subscribed' => (bool)$isSubscribed
+            ]
+        ];
+        if (defined('DEBUG') && DEBUG) {
+            $resp['debug_verify_url'] = $tokenInfo['verify_url'];
+        }
+        json_success($resp);
+    }
+
+    // Name-only visitor without email
+    $stmt = $db->prepare('INSERT INTO visitor_profiles (name, email, phone, is_subscribed, is_verified) VALUES (?, NULL, ?, ?, 1)');
+    $stmt->execute([$name, $phone ?: null, $isSubscribed]);
+    $visitorId = (int) $db->lastInsertId();
+
+    json_success([
+        'message'               => 'Visitor profile saved successfully',
+        'is_existing'           => false,
+        'requires_verification' => false,
+        'visitor'               => [
+            'id'            => $visitorId,
+            'name'          => $name,
+            'email'         => '',
             'phone'         => $phone,
             'is_subscribed' => (bool)$isSubscribed
         ]
@@ -222,29 +390,38 @@ function handle_subscription(PDO $db, string $email, string $name = '', string $
     $stmt->execute([$email]);
     $existing = $stmt->fetch();
 
-    if ($existing) {
-        if (($existing['status'] ?? 'active') === 'unsubscribed') {
-            $db->prepare("UPDATE subscriptions SET status = 'active', name = COALESCE(?, name) WHERE id = ?")
-               ->execute([$name ?: null, $existing['id']]);
-            send_subscriber_welcome_email($email, $name);
-            json_message('Welcome back! You have resubscribed successfully.');
-        } else {
-            json_message('You are already subscribed!');
-        }
-    } else {
-        $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'active')")
-           ->execute([$name ?: null, $email, $phone ?: null]);
-        
-        // Add notification
-        $db->prepare(
-            "INSERT INTO notifications (type, post_id, item_id, message) VALUES ('subscription', NULL, NULL, ?)"
-        )->execute(["New newsletter subscriber: " . ($name ? "{$name} ({$email})" : $email)]);
-
-        // Send HTML Welcome Email to new subscriber
-        send_subscriber_welcome_email($email, $name);
-
-        json_message('You are subscribed! Thank you.');
+    if ($existing && ($existing['status'] ?? 'active') === 'active') {
+        json_message('You are already subscribed!');
     }
+
+    // If existing and pending or unsubscribed, or totally new
+    if ($existing) {
+        $db->prepare("UPDATE subscriptions SET status = 'pending', name = COALESCE(?, name), phone = COALESCE(?, phone) WHERE id = ?")
+           ->execute([$name ?: null, $phone ?: null, $existing['id']]);
+    } else {
+        $db->prepare("INSERT INTO subscriptions (name, email, phone, status) VALUES (?, ?, ?, 'pending')")
+           ->execute([$name ?: null, $email, $phone ?: null]);
+    }
+
+    // Issue verification token
+    $tokenInfo = create_verification_token($db, $email, 'subscriber', [
+        'name'  => $name,
+        'email' => $email,
+        'phone' => $phone
+    ], 24);
+
+    send_verification_email($email, $name, $tokenInfo['verify_url'], 'subscriber');
+
+    $resp = [
+        'requires_verification' => true,
+        'email'                 => $email,
+        'message'               => "A confirmation link has been sent to {$email}. Please click the link to confirm your subscription."
+    ];
+    if (defined('DEBUG') && DEBUG) {
+        $resp['debug_verify_url'] = $tokenInfo['verify_url'];
+    }
+
+    json_success($resp);
 }
 
 /**

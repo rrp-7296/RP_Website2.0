@@ -11,7 +11,8 @@ export default function Contact() {
   });
   const [hpValue, setHpValue] = useState('');
   const [formMountedAt] = useState(() => Date.now());
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'verification_pending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -22,6 +23,7 @@ export default function Contact() {
     e.preventDefault();
     setStatus('loading');
     setErrorMessage('');
+    const emailToConfirm = formData.email;
 
     try {
       const response = await fetch(apiUrl('/messages'), {
@@ -36,7 +38,12 @@ export default function Contact() {
       const data = await response.json();
       
       if (response.ok) {
-        setStatus('success');
+        setSubmittedEmail(emailToConfirm);
+        if (data.requires_verification) {
+          setStatus('verification_pending');
+        } else {
+          setStatus('success');
+        }
         setFormData({ name: '', email: '', subject: '', message: '' });
       } else {
         setStatus('error');
@@ -120,7 +127,47 @@ export default function Contact() {
 
           {/* Form Side */}
           <div className="contact-form-card">
-            {status === 'success' ? (
+            {status === 'verification_pending' ? (
+              <div className="contact-success-state" style={{ textAlign: 'center', padding: '30px 20px' }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 153, 51, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                  color: 'var(--saffron)'
+                }}>
+                  <Mail size={36} />
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-primary)' }}>
+                  Confirm Your Email Address
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+                  To block spam and automated bots, we sent a confirmation link to <strong style={{ color: 'var(--text-primary)' }}>{submittedEmail}</strong>.
+                </p>
+                <div style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '10px',
+                  padding: '14px 16px',
+                  fontSize: '0.88rem',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '24px'
+                }}>
+                  📩 Please click the link inside your email to verify and deliver your message to Rakeshwar Pandey’s office.
+                  <br />
+                  <span style={{ fontSize: '0.82rem', marginTop: '6px', display: 'inline-block' }}>
+                    (Check your Spam or Junk folder if you don't see it in a few seconds)
+                  </span>
+                </div>
+                <button onClick={() => setStatus('idle')} className="btn btn-outline" style={{ margin: '0 auto' }}>
+                  Send Another Message
+                </button>
+              </div>
+            ) : status === 'success' ? (
               <div className="contact-success-state">
                 <CheckCircle className="success-icon" size={48} />
                 <h3>Message Sent Successfully!</h3>

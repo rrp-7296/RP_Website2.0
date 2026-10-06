@@ -146,7 +146,10 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.is_existing) {
+        if (data.requires_verification) {
+          setWelcomeToast(`Confirmation link sent to ${profile.email}! Please verify your email.`);
+          setTimeout(() => setWelcomeToast(null), 6000);
+        } else if (data.is_existing) {
           triggerWelcomeToast(profile.name, true);
         } else {
           triggerWelcomeToast(profile.name, false);

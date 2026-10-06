@@ -17,9 +17,10 @@ if ($method === 'GET' && $adminPath === '/subscribers') {
 
     $result = paginate(
         $db,
-        'SELECT COUNT(*) FROM subscriptions',
+        "SELECT COUNT(*) FROM subscriptions WHERE (status != 'pending' OR status IS NULL)",
         "SELECT id, name, email, phone, COALESCE(status, 'active') AS status, COALESCE(subscribed_at, CURRENT_TIMESTAMP) AS created_at
          FROM subscriptions
+         WHERE (status != 'pending' OR status IS NULL)
          ORDER BY id DESC
          LIMIT ? OFFSET ?",
         [],

@@ -18,10 +18,15 @@ export default function Newsletter() {
     }
   }, [visitor]);
 
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [requiresVerification, setRequiresVerification] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setStatus('loading');
+    const targetEmail = email;
+
     try {
       const response = await fetch(apiUrl('/subscriptions'), {
         method: 'POST',
@@ -36,12 +41,17 @@ export default function Newsletter() {
       });
       const data = await response.json();
       if (response.ok) {
+        setSubmittedEmail(targetEmail);
+        setRequiresVerification(Boolean(data.requires_verification));
         setStatus('success');
-        setMessage('Thank you for subscribing! We\'ll keep you updated.');
+        setMessage(data.message || (data.requires_verification 
+          ? `We sent a confirmation link to ${targetEmail}. Please click it to activate your subscription.` 
+          : 'Thank you for subscribing! We\'ll keep you updated.'));
+
         // Update visitor profile in context & localStorage
         saveVisitor({
-          name: visitor?.name || email.split('@')[0],
-          email: email,
+          name: visitor?.name || targetEmail.split('@')[0],
+          email: targetEmail,
           phone: visitor?.phone,
           is_subscribed: true
         });
@@ -86,10 +96,42 @@ export default function Newsletter() {
           </p>
 
           {status === 'success' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <CheckCircle size={40} color="var(--green)" />
-              <p className="newsletter-success">{message}</p>
-              <button onClick={() => setStatus('idle')} className="btn btn-outline btn-sm">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', maxWidth: '480px', margin: '0 auto' }}>
+              {requiresVerification ? (
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 153, 51, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--saffron)'
+                }}>
+                  <Mail size={32} />
+                </div>
+              ) : (
+                <CheckCircle size={44} color="var(--green)" />
+              )}
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                {requiresVerification ? 'Confirm Your Subscription' : 'Subscription Active!'}
+              </h3>
+              <p className="newsletter-success" style={{ textAlign: 'center', margin: 0, lineHeight: 1.6 }}>
+                {message}
+              </p>
+              {requiresVerification && (
+                <div style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '10px',
+                  padding: '10px 16px',
+                  fontSize: '0.84rem',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  Please check your inbox (and Spam folder) to click the confirmation link.
+                </div>
+              )}
+              <button onClick={() => { setStatus('idle'); setRequiresVerification(false); }} className="btn btn-outline btn-sm" style={{ marginTop: '4px' }}>
                 Subscribe another email
               </button>
             </div>

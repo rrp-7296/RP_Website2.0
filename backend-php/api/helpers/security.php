@@ -206,3 +206,89 @@ function sanitize_clean_text(string $text, int $maxLen = 2000): string {
     $stripped = strip_tags($text);
     return substr(trim($stripped), 0, $maxLen);
 }
+
+/**
+ * Detect frontend base URL for verification links (supports local dev server, Capacitor, or production domain).
+ */
+function get_site_frontend_url(): string {
+    if (!empty($_SERVER['HTTP_ORIGIN']) && (str_contains($_SERVER['HTTP_ORIGIN'], 'localhost') || str_contains($_SERVER['HTTP_ORIGIN'], '127.0.0.1'))) {
+        return rtrim($_SERVER['HTTP_ORIGIN'], '/');
+    }
+    if (!empty($_SERVER['HTTP_REFERER']) && (str_contains($_SERVER['HTTP_REFERER'], 'localhost') || str_contains($_SERVER['HTTP_REFERER'], '127.0.0.1'))) {
+        $parsed = parse_url($_SERVER['HTTP_REFERER']);
+        if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+            $port = !empty($parsed['port']) ? ':' . $parsed['port'] : '';
+            return $parsed['scheme'] . '://' . $parsed['host'] . $port;
+        }
+    }
+    return defined('APP_URL') ? rtrim(APP_URL, '/') : 'https://rakeshwarpandey.com';
+}
+
+/**
+ * Generate and store a secure verification token for subscriber/contact/visitor.
+ *
+ * @param PDO    $db
+ * @param string $email
+ * @param string $actionType   'contact' | 'subscriber' | 'visitor'
+ * @param array  $payload      Metadata to associate with the verification
+ * @param int    $expiryHours  Link validity duration (default 24h)
+ * @return array ['token' => string, 'verify_url' => string, 'expires_at' => string]
+ */
+function create_verification_token(PDO $db, string $email, string $actionType, array $payload, int $expiryHours = 24): array {
+    ensure_verification_tables($db);
+
+    $token = bin2hex(random_bytes(32)); // 64 hex characters
+    $expiresAt = date('Y-m-d H:i:s', time() + ($expiryHours * 3600));
+    $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+    $stmt = $db->prepare('INSERT INTO verification_tokens (token, action_type, email, payload, is_verified, expires_at) VALUES (?, ?, ?, ?, 0, ?)');
+    $stmt->execute([$token, $actionType, $email, $payloadJson, $expiresAt]);
+
+    $siteUrl = get_site_frontend_url();
+    $verifyUrl = "{$siteUrl}/#/verify?token=" . urlencode($token) . "&type=" . urlencode($actionType);
+
+    return [
+        'token'      => $token,
+        'verify_url' => $verifyUrl,
+        'expires_at' => $expiresAt
+    ];
+}
+
+/**
+ * Validate and consume a verification token.
+ *
+ * @param PDO         $db
+ * @param string      $token
+ * @param string|null $expectedType
+ * @return array|null Returns record array with decoded 'payload' if valid, null otherwise
+ */
+function verify_email_token(PDO $db, string $token, ?string $expectedType = null): ?array {
+    ensure_verification_tables($db);
+
+    $sql = 'SELECT * FROM verification_tokens WHERE token = ? AND is_verified = 0 LIMIT 1';
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$token]);
+    $record = $stmt->fetch();
+
+    if (!$record) {
+        return null;
+    }
+
+    if ($expectedType !== null && $record['action_type'] !== $expectedType) {
+        return null;
+    }
+
+    // Check expiration
+    if (strtotime($record['expires_at']) < time()) {
+        return null;
+    }
+
+    // Mark as verified & consumed
+    $nowStr = date('Y-m-d H:i:s');
+    $db->prepare('UPDATE verification_tokens SET is_verified = 1, verified_at = ? WHERE id = ?')
+       ->execute([$nowStr, $record['id']]);
+
+    $record['payload'] = json_decode($record['payload'] ?? '{}', true) ?: [];
+    return $record;
+}
+

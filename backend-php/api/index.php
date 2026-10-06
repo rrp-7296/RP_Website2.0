@@ -153,8 +153,8 @@ if (str_starts_with($path, '/gallery')) {
     exit;
 }
 
-// ── Contact / Messages / Subscriptions / Visitors (public) ────────────────
-if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || str_starts_with($path, '/subscriptions') || str_starts_with($path, '/unsubscribe') || str_starts_with($path, '/resubscribe') || $path === '/visitors') {
+// ── Contact / Messages / Subscriptions / Visitors / Verify (public) ───────
+if ($path === '/messages' || $path === '/contact' || $path === '/subscribe' || str_starts_with($path, '/subscriptions') || str_starts_with($path, '/unsubscribe') || str_starts_with($path, '/resubscribe') || $path === '/visitors' || str_starts_with($path, '/verify')) {
     require_once $routesDir . '/contact.php';
     exit;
 }

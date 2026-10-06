@@ -177,6 +177,9 @@ function ensure_tables_exist(PDO $pdo): void {
 
         // 9. analytics tables (sessions & daily summaries)
         ensure_analytics_tables($pdo);
+
+        // 10. verification_tokens table & is_verified column migrations
+        ensure_verification_tables($pdo);
     } catch (Exception $e) {
         // Log or silently continue if tables already created
     }
@@ -271,6 +274,51 @@ function ensure_images_columns(PDO $pdo): void {
             // Column already exists or table doesn't exist yet
         }
     }
+}
+
+/**
+ * Ensure verification_tokens table exists and is_verified columns are present.
+ */
+function ensure_verification_tables(PDO $pdo): void {
+    static $verifiedTableDone = false;
+    if ($verifiedTableDone) return;
+    $verifiedTableDone = true;
+
+    $isSQLite = (defined('DB_DRIVER') && DB_DRIVER === 'sqlite');
+    $pkAuto   = $isSQLite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY';
+    $engine   = $isSQLite ? '' : 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS verification_tokens (
+                id          {$pkAuto},
+                token       VARCHAR(64) NOT NULL UNIQUE,
+                action_type VARCHAR(50) NOT NULL,
+                email       VARCHAR(255) NOT NULL,
+                payload     TEXT NOT NULL,
+                is_verified TINYINT(1) DEFAULT 0,
+                expires_at  DATETIME NOT NULL,
+                verified_at DATETIME NULL,
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) {$engine};
+        ");
+
+        if ($isSQLite) {
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_verify_token ON verification_tokens(token);");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_verify_email ON verification_tokens(email);");
+        }
+    } catch (Exception $e) {
+        // Table or index exists
+    }
+
+    // Migration: add is_verified column to contact_messages and visitor_profiles
+    try {
+        $pdo->exec("ALTER TABLE contact_messages ADD COLUMN is_verified TINYINT(1) DEFAULT 1");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE visitor_profiles ADD COLUMN is_verified TINYINT(1) DEFAULT 1");
+    } catch (Exception $e) {}
 }
 
 

@@ -13,6 +13,7 @@ import Gallery from './pages/Gallery';
 import TimelineList from './pages/TimelineList';
 import NewsList from './pages/NewsList';
 import UnsubscribePage from './pages/UnsubscribePage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import NotFound from './pages/NotFound';
@@ -65,6 +66,7 @@ function AppContent() {
           <Route path="/timeline" element={<TimelineList />} />
           <Route path="/news" element={<NewsList />} />
           <Route path="/unsubscribe" element={<UnsubscribePage />} />
+          <Route path="/verify" element={<VerifyEmailPage />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
