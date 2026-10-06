@@ -139,7 +139,8 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
           name: profile.name,
           email: profile.email || '',
           phone: profile.phone || '',
-          is_subscribed: profile.is_subscribed !== false ? 1 : 0
+          is_subscribed: profile.is_subscribed !== false ? 1 : 0,
+          _t: Date.now()
         })
       });
 

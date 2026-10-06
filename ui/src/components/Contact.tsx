@@ -9,6 +9,8 @@ export default function Contact() {
     subject: '',
     message: ''
   });
+  const [hpValue, setHpValue] = useState('');
+  const [formMountedAt] = useState(() => Date.now());
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -25,7 +27,11 @@ export default function Contact() {
       const response = await fetch(apiUrl('/messages'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          website_hp: hpValue,
+          _t: formMountedAt
+        })
       });
       const data = await response.json();
       
@@ -125,6 +131,20 @@ export default function Contact() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="contact-form">
+                {/* Honeypot anti-bot trap */}
+                <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none', height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
+                  <label htmlFor="contact_website_hp">Leave this empty</label>
+                  <input
+                    type="text"
+                    id="contact_website_hp"
+                    name="website_hp"
+                    value={hpValue}
+                    onChange={(e) => setHpValue(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="name" className="form-label">Full Name</label>

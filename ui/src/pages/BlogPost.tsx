@@ -87,6 +87,8 @@ export default function BlogPost() {
   // Comment Form States
   const [commenterName, setCommenterName] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [commentHp, setCommentHp] = useState('');
+  const [commentMountedAt] = useState(() => Date.now());
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentMessage, setCommentMessage] = useState('');
 
@@ -196,7 +198,9 @@ export default function BlogPost() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: commenterName,
-          comment: commentText
+          comment: commentText,
+          website_hp: commentHp,
+          _t: commentMountedAt
         })
       });
 
@@ -306,6 +310,20 @@ export default function BlogPost() {
           <div className="comment-form-wrapper" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px', marginTop: '24px' }}>
             <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: '16px', color: 'var(--text-primary)' }}>Leave a Comment</h4>
             <form onSubmit={handleCommentSubmit} className="comment-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Honeypot anti-bot trap */}
+              <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none', height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
+                <label htmlFor="blog_comment_hp">Leave this empty</label>
+                <input
+                  type="text"
+                  id="blog_comment_hp"
+                  name="website_hp"
+                  value={commentHp}
+                  onChange={(e) => setCommentHp(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <div className="form-group">
                 <input
                   type="text"

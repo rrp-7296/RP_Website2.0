@@ -95,9 +95,11 @@ if ($method === 'GET' && ($m = match_route('/blogs/{id}', $path)) !== false) {
 
 // POST /blogs/{id}/like
 if ($method === 'POST' && ($m = match_route('/blogs/{id}/like', $path)) !== false) {
+    check_rate_limit('blog_like', 20, 60, 300);
+
     $id   = (int) $m['id'];
     $body = get_body();
-    $name = optional_field($body, 'name', 'Anonymous');
+    $name = sanitize_clean_text(optional_field($body, 'name', 'Anonymous'), 100);
 
     $stmt = $db->prepare('SELECT id, title, likes_count FROM blog_posts WHERE id = ? AND is_deleted = 0 LIMIT 1');
     $stmt->execute([$id]);
@@ -136,10 +138,25 @@ if ($method === 'POST' && ($m = match_route('/blogs/{id}/like', $path)) !== fals
 if ($method === 'POST' && ($m = match_route('/blogs/{id}/comments', $path)) !== false) {
     $id   = (int) $m['id'];
     $body = get_body();
+
+    // Security Layers: Rate Limiting, Honeypot, Time-gate
+    check_rate_limit('blog_comment', 5, 600, 1800);
+    verify_honeypot($body);
+    verify_time_gate($body, 2.0);
+
     $name    = require_field($body, 'name');
     $email   = optional_field($body, 'email', '');
     $comment = require_field($body, 'comment');
 
+    if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_error('Invalid email address', 422);
+    }
+    if ($email && is_disposable_email($email)) {
+        json_error('Please use a valid permanent email address.', 422);
+    }
+
+    $name    = sanitize_clean_text($name, 100);
+    $comment = sanitize_clean_text($comment, 2000);
 
     $stmt = $db->prepare('SELECT id, title FROM blog_posts WHERE id = ? AND is_deleted = 0 LIMIT 1');
     $stmt->execute([$id]);

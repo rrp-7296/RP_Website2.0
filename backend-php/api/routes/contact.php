@@ -7,7 +7,13 @@ $db = get_db();
 
 // POST /messages (Contact Form Submission)
 if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
-    $body    = get_body();
+    $body = get_body();
+
+    // Security Layers: Rate Limiting, Honeypot, Time-gate
+    check_rate_limit('contact_form', 5, 600, 1800);
+    verify_honeypot($body);
+    verify_time_gate($body, 2.5);
+
     $name    = require_field($body, 'name');
     $email   = require_field($body, 'email');
     $subject = optional_field($body, 'subject', '');
@@ -16,6 +22,15 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_error('Invalid email address', 422);
     }
+
+    if (is_disposable_email($email)) {
+        json_error('Please use a valid personal or business email address.', 422);
+    }
+
+    // Clean text fields
+    $name    = sanitize_clean_text($name, 100);
+    $subject = sanitize_clean_text($subject, 200);
+    $message = sanitize_clean_text($message, 5000);
 
     $stmt = $db->prepare(
         'INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)'
@@ -40,11 +55,22 @@ if ($method === 'POST' && ($path === '/messages' || $path === '/contact')) {
 
 // POST /visitors — Save visitor profile & newsletter subscription (No duplicate entries)
 if ($method === 'POST' && $path === '/visitors') {
-    $body         = get_body();
+    $body = get_body();
+
+    // Security Layers: Rate Limiting, Honeypot, Time-gate
+    check_rate_limit('visitor_register', 10, 600, 1800);
+    verify_honeypot($body);
+    verify_time_gate($body, 1.5);
+
     $name         = require_field($body, 'name');
     $email        = optional_field($body, 'email', '');
     $phone        = optional_field($body, 'phone', '');
     $isSubscribed = isset($body['is_subscribed']) ? ((bool) $body['is_subscribed'] ? 1 : 0) : 1;
+
+    $name = sanitize_clean_text($name, 100);
+    if ($email && is_disposable_email($email)) {
+        json_error('Please provide a valid permanent email address.', 422);
+    }
 
     $isExisting = false;
     $visitorId  = 0;
@@ -164,7 +190,7 @@ if ($method === 'POST' && $path === '/subscriptions') {
     $email = require_field($body, 'email');
     $name  = optional_field($body, 'name', '');
     $phone = optional_field($body, 'phone', '');
-    handle_subscription($db, $email, $name, $phone);
+    handle_subscription($db, $email, $name, $phone, $body);
 }
 
 // POST /subscribe (query-param style)
@@ -173,13 +199,24 @@ if ($method === 'POST' && $path === '/subscribe') {
     $email = $_GET['email'] ?? require_field($body, 'email');
     $name  = $_GET['name'] ?? optional_field($body, 'name', '');
     $phone = $_GET['phone'] ?? optional_field($body, 'phone', '');
-    handle_subscription($db, $email, $name, $phone);
+    handle_subscription($db, $email, $name, $phone, $body);
 }
 
-function handle_subscription(PDO $db, string $email, string $name = '', string $phone = ''): void {
+function handle_subscription(PDO $db, string $email, string $name = '', string $phone = '', array $body = []): void {
+    // Security Layers: Rate Limiting, Honeypot, Time-gate
+    check_rate_limit('newsletter_subscribe', 5, 600, 1800);
+    verify_honeypot($body);
+    verify_time_gate($body, 2.0);
+
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_error('Invalid email address', 422);
     }
+
+    if (is_disposable_email($email)) {
+        json_error('Please use a valid personal or business email address.', 422);
+    }
+
+    $name = sanitize_clean_text($name, 100);
 
     $stmt = $db->prepare('SELECT id, status FROM subscriptions WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);

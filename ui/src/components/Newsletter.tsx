@@ -6,6 +6,8 @@ import { useVisitor } from '../context/VisitorContext';
 export default function Newsletter() {
   const { visitor, saveVisitor } = useVisitor();
   const [email, setEmail] = useState('');
+  const [hpValue, setHpValue] = useState('');
+  const [formMountedAt] = useState(() => Date.now());
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -27,7 +29,9 @@ export default function Newsletter() {
         body: JSON.stringify({
           email,
           name: visitor?.name || '',
-          phone: visitor?.phone || ''
+          phone: visitor?.phone || '',
+          website_hp: hpValue,
+          _t: formMountedAt
         }),
       });
       const data = await response.json();
@@ -91,6 +95,20 @@ export default function Newsletter() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="newsletter-form" aria-label="Newsletter subscription form">
+              {/* Honeypot anti-bot trap */}
+              <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none', height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
+                <label htmlFor="newsletter_website_hp">Leave this empty</label>
+                <input
+                  type="text"
+                  id="newsletter_website_hp"
+                  name="website_hp"
+                  value={hpValue}
+                  onChange={(e) => setHpValue(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <div style={{ position: 'relative', flex: 1 }}>
                 <Mail
                   size={18}
